@@ -440,6 +440,11 @@ if(1)//C2800 NO HAVE up and down
     return 1;
 }
 
+
+
+
+
+
 void get_alarm_time_str(TIME * p_time, char * ret_str)
 {
    get_time_str_ex(p_time,ret_str,1,1);
@@ -1093,13 +1098,6 @@ void set_date_time()
                          {
                               case TFKEY_SOFT_RIGHT:
 							  {
-                                   if( (0 != memcmp(&bkp_date, &temp_date,sizeof(DATE)) ||  0 != memcmp(&bkp_time, &temp_time,sizeof(TIME) )))
-                                   {
-								  	   if (1 == choose_yes_no(get_multi_string((char * *)text_confirm),get_multi_string((char * *)text_ask_save_or_not)) )
-								  	   {
-			                                mu_set_date_time(&temp_date, &temp_time);
-								  	   }
-                                   }
 								   return ;   
 							  }
 							  break;
@@ -1131,10 +1129,19 @@ void set_date_time()
 		                            if(1 == cursor)
 		                            {
 		                                app_set_date(&temp_date);
+										if(0 != memcmp(&bkp_date, &temp_date,sizeof(DATE)))
+										{
+                                             mu_set_date_time(&temp_date, &temp_time);
+										}
 									}
 									else if(2 == cursor)
 									{
 		                                app_set_time(&temp_time);
+
+										if(0 != memcmp(&bkp_time, &temp_time,sizeof(TIME)))
+										{
+                                             mu_set_date_time(&temp_date, &temp_time);
+										}
 									}
 									appsys.byte_need_redraw=0xFF;
 							  }

@@ -148,7 +148,7 @@ unsigned char app_graph_meme( unsigned char * icons,char *** menus,unsigned char
                              switch(cursor)
                              {
                                 case 1:
-									cursor =4;
+									cursor =8;
 								break;
 								case 2:
 									cursor =5;
@@ -157,13 +157,19 @@ unsigned char app_graph_meme( unsigned char * icons,char *** menus,unsigned char
 									cursor =6;
 								break;
 								case 4:
-									cursor =3;
+									cursor =7;
 								break;
 								case 5:
 									cursor =1;
 								break;
 								case 6:
 									cursor =2;
+								break;
+								case 7:
+									cursor =3;
+								break;
+								case 8:
+									cursor =4;
 								break;
 
 								default:
@@ -184,16 +190,22 @@ unsigned char app_graph_meme( unsigned char * icons,char *** menus,unsigned char
 									cursor =6;
 								break;
 								case 3:
-									cursor =4;
+									cursor =7;
 								break;
 								case 4:
-									cursor =1;
+									cursor =8;
 								break;
 								case 5:
 									cursor =2;
 								break;
 								case 6:
 									cursor =3;
+								break;
+							 	case 7:
+									cursor =4;
+								break;
+							  	case 8:
+									cursor =1;
 								break;
 
 								default:
@@ -236,6 +248,12 @@ unsigned char choose_menu_option_ex(char *** temp_menus, unsigned char max_size,
 	memset(menu_mask,0,max_size);
 	menu_mask[*def_pos]=1;
 
+
+	if(  (ex_style | MENU_STYLE_MUSIC_VOICE )  >0  || (ex_style | MENU_STYLE_ALARM_VOICE )  >0 || (ex_style | MENU_STYLE_SMSRING_VOICE )  >0    )
+	{
+         appsys.flag_selecting_ring=1;
+	}
+
     if (1 == app_menu_option(temp_menus, (unsigned char *)menu_mask, max_size,*def_pos, (flag_read_only>0)? MENU_OPTION_READONLY :0 , ex_style))
     {   
         unsigned char tmp_pos=0;
@@ -254,6 +272,13 @@ unsigned char choose_menu_option_ex(char *** temp_menus, unsigned char max_size,
 	{
         appsys.byte_need_redraw=0xFF;
 	}
+
+    if(appsys.flag_selecting_ring >0)
+    {
+        app_stop_music();
+	    appsys.flag_selecting_ring=0;
+	}
+
     return nret;
 }
 
@@ -530,21 +555,24 @@ void wnd_menu_redraw(MENUWND * p_menu_wnd)
 
 					if((p_menu_wnd->style & MENU_STYLE_MUSIC_VOICE) >0)
 					{
-						if( appsys.byte_last_music_id !=p_menu_wnd->selected_pos   )
+						if( appsys.byte_last_music_id !=  music_array[p_menu_wnd->selected_pos]   )
 						{
 						    app_play_income_ring(p_menu_wnd->selected_pos, 0);
 						}
 					}
 					else if((p_menu_wnd->style & MENU_STYLE_ALARM_VOICE) >0)
 					{
-						if( appsys.byte_last_music_id !=p_menu_wnd->selected_pos   )
+						if( appsys.byte_last_music_id !=alarm_array [p_menu_wnd->selected_pos ]  )
 						{
 						     app_play_alarm_ring(p_menu_wnd->selected_pos, 0);
 						}
 					}
 					else if(  (p_menu_wnd->style & MENU_STYLE_SMSRING_VOICE) >0)
 					{
-				         app_play_sms_ring(p_menu_wnd->selected_pos);
+					    if( appsys.byte_last_music_id !=smsring_array [p_menu_wnd->selected_pos ]  )
+					    {
+				             app_play_sms_ring(p_menu_wnd->selected_pos);
+					    }
 					}
 				}
     		}
@@ -1263,7 +1291,7 @@ void app_run_all_settings( void )
     unsigned short pos_info=0;
     while ( 1 )
     {
-        switch ( app_menu_select((char ***)mem_settings,9,&pos_info) )
+        switch ( app_menu_select((char ***)mem_settings,6,&pos_info) )
         {
             case 1:
                 app_run_display_settings();
@@ -1278,18 +1306,9 @@ void app_run_all_settings( void )
                 app_run_call_ctrl_settings();
                 break;
 			case 5:
-				app_set_fast_dial_list();
-				break;
-			case 6:
-                app_bluetooth_setting();
-			    break;	
-			case 7:
-				app_wifi_setting();
-				break;
-            case 8:
                 app_view_version();
                 break;
-			case 9:
+			case 6:
 				app_run_factory_settings();
 				break;
 				
@@ -1533,6 +1552,29 @@ void app_run_call_ctrl_settings( void )
         }
     }
 }
+void app_select_ring_music()
+{
+   unsigned char music_id= sysprop->byte_income_ring;
+
+
+   DebugPrintf("sysprop->byte_income_ring =%d\r\n",sysprop->byte_income_ring);
+   
+   if(1 == app_music_show(&music_id))
+   {
+       if(music_id != sysprop->byte_income_ring)
+       {
+           char tmp_cmd[128];
+		   memset(tmp_cmd,0,sizeof(tmp_cmd));
+		   
+           sysprop->byte_income_ring=music_id;
+
+		   send_android_command(andr_build_43D1_set_ring_music(tmp_cmd,  music_array[sysprop->byte_income_ring]));
+
+		   app_save_prop();
+	   }
+   }
+   mu_set_spk_gain(sysprop->byte_talk_volume);
+}
 
 void app_run_voice_settings( void )
 {
@@ -1544,16 +1586,7 @@ void app_run_voice_settings( void )
             case 1:
                 // ring select
                 {
-                   unsigned char music_id= sysprop->byte_income_ring;
-                   if(1 == app_music_show(&music_id))
-                   {
-                       if(music_id != sysprop->byte_income_ring)
-                       {
-                           sysprop->byte_income_ring=music_id;
-						   app_save_prop();
-					   }
-				   }
-				   mu_set_spk_gain(sysprop->byte_talk_volume);
+                      app_select_ring_music();
 				}
                 break;
 
@@ -1581,7 +1614,12 @@ void app_run_voice_settings( void )
                    {
                        if(music_id != sysprop->byte_sms_ring)
                        {
+                       
+                       	   char tmp_cmd[128];
+		                   memset(tmp_cmd,0,sizeof(tmp_cmd));
                            sysprop->byte_sms_ring=music_id;
+
+		                   send_android_command(andr_build_43D2_set_sms_music(tmp_cmd,  smsring_array[sysprop->byte_sms_ring]));
 						   app_save_prop();
 					   }
 				   }
@@ -1677,8 +1715,10 @@ void app_keyboard_test()
 
 			 memset(tmp_buf,0,sizeof(tmp_buf));
 	
-
-			 sprintf(tmp_buf,"[0x%.2X]%s",byte_last_key,key_str);
+             if(byte_last_key >0)
+             {
+			     sprintf(tmp_buf,"[0x%.2X]%s",byte_last_key,key_str);
+             }
 		
 			 
 			 lcd_goto_x_line( (SCREEN_WIDTH-get_str_dots_width(tmp_buf))/2, 2);
@@ -1702,37 +1742,25 @@ void app_keyboard_test()
 					    switch(EventPara.sig_p.key_evt.key_val)
 					    {
 
-
-							case TFKEY_LVSRV:
-							key_str="生活服务";
-							break;
-							
-						
 						    case TFKEY_SOFT_LEFT:
-							key_str="菜单/确定";
+							key_str="左导航";
 							break;
 
 							case TFKEY_SOFT_RIGHT:
-							key_str="电话本/返回";						
-							msg("刚才您按下了 电话本/返回");
+							key_str="右导航";						
+							msg("刚才您按下了 '右导航' ，退出测试.");
 							delay_ms(1500);
 							return;
 							break;
 
-							
-							case TFKEY_POWER:
-							key_str="开/关";
-							break;	
-							
-							case TFKEY_SMS:
-							key_str="短信";
-							break;		
-
-							case TFKEY_SETUP:
-							key_str="设置";
+							case TFKEY_ALARM:
+                            key_str="闹钟";
 							break;
 							
-								
+                            case TFKEY_MUSIC:
+                            key_str="铃声";
+							break;
+
 							case TFKEY_UP:
 							key_str="方向键(上)";
 							break;
@@ -1748,6 +1776,9 @@ void app_keyboard_test()
 						  	case TFKEY_RIGHT:
 							key_str="方向键(右)";
 							break;
+
+							
+//						
 							
 								
 							case TFKEY_1:
@@ -1809,24 +1840,28 @@ void app_keyboard_test()
 							key_str="#";
 							break;
 
-					
-						 	case TFKEY_SEND:
+
+
+							case TFKEY_SEND:
 							key_str="发送";
-							break;
+							break;	
+
+						 	case TFKEY_POWER:
+							key_str="开关机";
+							break;	
+         
 							
-								
+							case TFKEY_MUTE:
+							key_str="喇叭/MIC静音";
+							break;	
+							
+							case TFKEY_REDIAL:
+							key_str="重拨";
+							break;		
+
+						
 							case TFKEY_HANDFREE:
 							key_str="免提";
-							break;
-
-					 		case TFKEY_FAST1:
-							key_str="快捷键1";
-							break;	
-							case TFKEY_FAST2:
-							key_str="快捷键2";
-							break;
-				 		    case TFKEY_FAST3:
-							key_str="快捷键3";
 							break;
 
             		    }					
@@ -1930,9 +1965,12 @@ void app_echo_test()
 void app_hardware_test( void )
 {
     unsigned short pos_info=0; 
+
+    unsigned char bk_language = sysprop->byte_language_type;
+	sysprop->byte_language_type =LANGUAGE_CHINESE;
     while ( 1 )
     {
-        switch ( app_menu_select((char ***)mem_test,6,&pos_info) )
+        switch ( app_menu_select((char ***)mem_test,8,&pos_info) )
         {    
             case 1:
 		        app_keyboard_test();
@@ -1950,266 +1988,31 @@ void app_hardware_test( void )
                 app_battery_test();
                 break;
 			case 6:
+			    show_device_power_info();
+				break;
+		  	case 7:
+			    show_device_csq_level();
+				break;		
+		 	case 8:
 			    app_echo_test();
-				break;
+				break;	
 			default:
-				return;
+			    sysprop->byte_language_type =bk_language;
+				return ;
 				break;
         }
     } 
+
 }
 
 
 
-void app_set_fast_dial_list( void )
-{
-    unsigned short pos_info=0; 
-	unsigned char i;
-	char * pbuf =NULL;
-
-    char *temp_menu[6][4];
-	char ** pmenus[6];
-	char str_F1[32];
-	char str_F2[32];
-	char str_F3[32];
-	char str_F4[32];
-	char str_F5[32];	
-    char tmp_number[BOOK_ENTRY_NUM_FIELD_SIZE+1];
-    int sel_pos =0;
-	unsigned char menu_cnt=0;
-	
-    while ( 1 )
-    {
-
-		memset(str_F1,0,sizeof(str_F1));
-		memset(str_F2,0,sizeof(str_F2));
-		memset(str_F3,0,sizeof(str_F3));
-		memset(str_F4,0,sizeof(str_F3));
-		memset(str_F5,0,sizeof(str_F3));	
-		
-		temp_menu[0][0]=(char *)text_fastkey[0];
-		temp_menu[0][1]=(char *)text_fastkey[1];
-	    temp_menu[0][2]=(char *)text_fastkey[2];
-	    temp_menu[0][3]=(char *)text_fastkey[3];
-
-	    pbuf =&(sysprop->str_fast_list[ (BOOK_ENTRY_NUM_FIELD_SIZE+1) *(1 -1)]);
-		if(strlen(pbuf)>0)
-		{
-		   sprintf(str_F1,"亲情1(%s)",pbuf );
-		}
-		else
-		{
-	       sprintf(str_F1,"亲情1(空)" );
-		}
-		temp_menu[1][0]=(char *)str_F1;
-		temp_menu[1][1]=(char *)str_F1;
-		temp_menu[1][2]=(char *)str_F1;
-		temp_menu[1][3]=(char *)str_F1;
-
-	    pbuf =&(sysprop->str_fast_list[ (BOOK_ENTRY_NUM_FIELD_SIZE+1) *(2 -1)]);
-		if(strlen(pbuf)>0)
-		{
-		   sprintf(str_F2,"亲情2(%s)",pbuf);
-		}
-		else
-		{
-	       sprintf(str_F2,"亲情2(空)" );
-		}
-
-		temp_menu[2][0]=(char *)str_F2;
-		temp_menu[2][1]=(char *)str_F2;
-		temp_menu[2][2]=(char *)str_F2;
-		temp_menu[2][3]=(char *)str_F2;
-
-	    pbuf= &(sysprop->str_fast_list[ (BOOK_ENTRY_NUM_FIELD_SIZE+1) *(3 -1)]);
-		if(strlen(pbuf)>0)
-		{
-		   sprintf(str_F3,"亲情3(%s)",pbuf);
-		}
-		else
-		{
-	       sprintf(str_F3,"亲情3(空)" );
-		}
-		temp_menu[3][0]=(char *)str_F3;
-		temp_menu[3][1]=(char *)str_F3;
-		temp_menu[3][2]=(char *)str_F3;	
-		temp_menu[3][3]=(char *)str_F3;	
-
-
-	    pbuf= &(sysprop->str_fast_list[ (BOOK_ENTRY_NUM_FIELD_SIZE+1) *(4 -1)]);
-		if(strlen(pbuf)>0)
-		{
-		   sprintf(str_F4,"生活服务(%s)",pbuf);
-		}
-		else
-		{
-	       sprintf(str_F4,"生活服务(空)" );
-		}
-		temp_menu[4][0]=(char *)str_F4;
-		temp_menu[4][1]=(char *)str_F4;
-	    temp_menu[4][2]=(char *)str_F4;
-	    temp_menu[4][3]=(char *)str_F4;
-
-	    pbuf= &(sysprop->str_fast_list[ (BOOK_ENTRY_NUM_FIELD_SIZE+1) *(5 -1)]);
-		if(strlen(pbuf)>0)
-		{
-		   sprintf(str_F5,"紧急求助(%s)",pbuf);
-		}
-		else
-		{
-	       sprintf(str_F5,"紧急求助(空)" );
-		}
-		temp_menu[5][0]=(char *)str_F5;
-		temp_menu[5][1]=(char *)str_F5;
-		temp_menu[5][2]=(char *)str_F5;
-		temp_menu[5][3]=(char *)str_F5;
-
-		
-		for(i=0;i<6;i++)
-		{
-	        pmenus[i]=temp_menu[i];
-		}
-
-		menu_cnt =(MAX_FAST_DIAL_NUMS -2);
-
-	    sel_pos =app_menu_select((char ***)pmenus, menu_cnt,&pos_info);
-		if( sel_pos >0  &&  sel_pos<= menu_cnt )
-		{
-		     app_set_fast_dial( (sel_pos -1) );
-		}
-		else
-		{
-            break;
-		}
-    } 
-	appsys.byte_need_redraw=0xFF;
-}
 
 
 
-unsigned char app_find_fast_dial(unsigned char key_code, char * fast_number)
-{
-    const unsigned char key_list[]={ TFKEY_FAST1,TFKEY_FAST2,TFKEY_FAST3,TFKEY_LVSRV, TFKEY_REMAINED};
-	unsigned char i=0, sel_pos=0xFF;
-	char * pbuf=NULL;
-    char tmp_number[BOOK_ENTRY_NUM_FIELD_SIZE+1];
-	
-	for(i=0;i<MAX_FAST_DIAL_NUMS;i++)
-	{
-        if(key_code  ==  key_list[i])
-        {
-             sel_pos =i;
-			 if(1 ==appsys.flag_genie_trace)DebugPrintf("FASTKEY SELPOS=%d\r\n", sel_pos);
-             break;
-		}
-	}
-
-	if(sel_pos <=MAX_FAST_DIAL_NUMS )
-	{
-         pbuf = &(sysprop->str_fast_list[ (BOOK_ENTRY_NUM_FIELD_SIZE+1) * sel_pos]);
-		 if(strlen(pbuf) >0)
-		 {
-			 strcpy(fast_number, pbuf);
-		 }
-		 
-         if(1 ==appsys.flag_genie_trace)DebugPrintf("FAST NUMBER =%s\r\n", fast_number);
-	}
-
-	return sel_pos;
-}
-
-void app_set_fast_dial(unsigned char sel_pos)
-{
-    char tmp_number[BOOK_ENTRY_NUM_FIELD_SIZE+1];
-	char * pbuf=NULL;
-
-    appsys.flag_setting_fast_dial=1;
-	
-    if( sel_pos<MAX_FAST_DIAL_NUMS )
-	{
-	    char tmp_buf[32];
-	    char tmp_name[16];
-
-		switch(sel_pos)
-		{
-		case 0:
-		case 1:
-		case 2:
-		 	 sprintf(tmp_name, "亲情号码%d", (sel_pos+1));
-		     sprintf(tmp_buf,  "请设置%s", tmp_name);
-			 break;
-		case 3:
-			 sprintf(tmp_name, "生活服务号码");
-			 sprintf(tmp_buf,  "请设置生活服务号码", tmp_name);
-			 break;
-		case 4:
-			 sprintf(tmp_name, "紧急求助号码");
-			 sprintf(tmp_buf,  "请设置紧急求助号码", tmp_name);
-			 break;
-		default:
-		     appsys.flag_setting_fast_dial=0;
-			 return ;
-			 break;
-		}
 
 
-	
-        pbuf = &(sysprop->str_fast_list[ (BOOK_ENTRY_NUM_FIELD_SIZE+1) *sel_pos]);
 
-		memset(tmp_number,0,sizeof(tmp_number));
-        strcpy(tmp_number,pbuf);
-		if(1 == wnd_input_text(tmp_number,  tmp_name, BOOK_ENTRY_NUM_FIELD_SIZE,IN_FIXED,EDIT_STYLE_DIGITALONLY))
-		{
-             if( strcmp(pbuf, tmp_number) !=0  )
-             {
-                 strncpy(pbuf, tmp_number,BOOK_ENTRY_NUM_FIELD_SIZE);
-				 app_save_prop();
-				
-				 if(strlen(tmp_number) >0 )
-				 {
-				     msgok(get_multi_string((char * *)text_set_successful));
 
-				 }
-				 else 
-				 {
-				     msgok(get_multi_string((char * *)text_number_removed));
-				 }
-				
-				 delay_ms(1500);
-			 }
-		}	
-	}
-
-	appsys.flag_setting_fast_dial=0;
-}
-
-void app_do_fast_dial(unsigned char key_code)
-{
-    char fast_number[BOOK_ENTRY_NUM_FIELD_SIZE+1];
-    unsigned char sel_pos=0xFF;
-
-	appsys.flag_doing_fast=1;
-
-	memset(fast_number,0,sizeof(fast_number));
-
-    if(0xFF !=(sel_pos = app_find_fast_dial(key_code, fast_number)))
-    {
-        if(strlen(fast_number) >0)
-        {
-			if(HOOK_STATE_ONHOOK == appsys.flag_hook_state)appsys.flag_hand_free =1;
-			appsys.flag_fast_dial=1;
-			app_dial_out(fast_number);
-			appsys.flag_fast_dial=0;    
-        }
-		else
-		{
-            app_set_fast_dial(sel_pos);
-		}
-	}
-
-    appsys.flag_doing_fast=0;
-
-	appsys.byte_need_redraw=0xFF;
-}
 
 

@@ -60,18 +60,18 @@ const unsigned char music_volume[]=
 {
     1,
    	3,
-   	5,
-   	7,   
-    9,   
+   	4,
+   	5,   
+    7,   
 };
 
 const unsigned char sms_volume[]=
 {
     1,
-   	2,
-   	3,
-   	4,   
-    5,   
+   	4,
+   	7,
+   11,   
+   14,   
 };
 
 const unsigned char speech_volume[]=
@@ -109,11 +109,43 @@ const unsigned char main_bmp_menu[] =
 	BMP_TOOL3_BIN,
 	BMP_TOOL4_BIN,
 	BMP_TOOL5_BIN,
+	BMP_TOOLB_BIN,
+	BMP_TOOLC_BIN,
 	BMP_TOOL6_BIN,
-	BMP_TOOL7_BIN,
 };
 
+void app_check_valid_paras()
+{
+    if(sysprop->byte_ring_volume >4)
+    {
+        sysprop->byte_ring_volume =4;
+	}
 
+	if(sysprop->byte_sms_volume >4)
+    {
+        sysprop->byte_sms_volume =4;
+	}
+
+	if(sysprop->byte_talk_volume >4)
+    {
+        sysprop->byte_talk_volume =4;
+	}
+
+	if( sysprop->byte_income_ring >=10)
+	{
+        sysprop->byte_income_ring =1;
+	}
+
+	if(    sysprop->byte_sms_ring >=5)
+	{
+        sysprop->byte_sms_ring =1;
+	}
+
+	if( sysprop->struct_alarm.alarm_ring>=5)
+	{
+        sysprop->struct_alarm.alarm_ring =1;
+	}
+}
 
 
 
@@ -122,7 +154,7 @@ const unsigned char main_bmp_menu[] =
 #define ASK_REG_INTERVAL (2)
 #define ASK_GPRS_INTERVAL (12)
 
-#define DEFAULT_SCREEN_REFRESH_TIME     0x01
+#define DEFAULT_SCREEN_REFRESH_TIME_WFBLU 0x01
 #define DEFAULT_SCREEN_REFRESH_NETWORK  0x02
 #define DEFAULT_SCREEN_REFRESH_ALARM    0x04
 #define DEFAULT_SCREEN_REFRESH_SOFTKEY  0x08
@@ -142,9 +174,11 @@ void * app_main(void * p)
 	unsigned char em_numcnt=0;
     char input_code=0;
 	
-    ALOGD("--------------LANCO_GUI V1.004--------------\r\n");
+    ALOGD("--------------LANCO_GUI V1.005 2018-05-26-----------\r\n");
 
     app_initial_system();
+
+	app_check_valid_paras();
 
     appsys.byte_reg_state = REG_STATE_NOT_REG;
 	appsys.byte_net_state = NET_STATE_UNKNOWN;
@@ -163,6 +197,11 @@ void * app_main(void * p)
          appsys.power_service.dword_no_ext_power_st= app_get_tick_count();
 	}
 
+
+	
+
+	mu_set_voice_path(VOICE_PATH_HANDFREE);
+
     while(1)
 	{	
 	    appsys.byte_need_exit=0;
@@ -175,14 +214,9 @@ void * app_main(void * p)
                lcd_clear_screen();
 		   }
 		   
-
-
 		    app_refresh_default_screen();   
-	
-		
 
-
-		   appsys.byte_need_redraw =0;
+		    appsys.byte_need_redraw =0;
 		}
 
 		
@@ -281,41 +315,33 @@ void * app_main(void * p)
 					{
                         app_run_messages();
 					}	
-			        else if(TFKEY_SETUP==  EventPara.sig_p.key_evt.key_val)
+				    else if(TFKEY_MUTE==  EventPara.sig_p.key_evt.key_val)
 				    {
+                        if(0 == appsys.flag_ring_mute)
+                        {
+                             app_set_voice_volumn(VOCTYPE_INCOMING_CALL, 0);
+                 		     app_set_voice_volumn(VOCTYPE_SMS_INCOMING, 0);
+							 appsys.flag_ring_mute=1;
+						}
+						else
+						{
+                             app_set_voice_volumn(VOCTYPE_INCOMING_CALL, music_volume[sysprop->byte_ring_volume]);
+                 		     app_set_voice_volumn(VOCTYPE_SMS_INCOMING,  music_volume[sysprop->byte_sms_volume]);
+							 appsys.flag_ring_mute=0;
+						}
 
-                        app_run_all_settings(); 
-		                appsys.byte_need_redraw=0xFF;
+						appsys.byte_need_redraw |= DEFAULT_SCREEN_REFRESH_SOFTKEY;
 					}
-			        else if(TFKEY_PHONEBOOK==  EventPara.sig_p.key_evt.key_val)
-				    {
-                        app_protocols_test();
-		                appsys.byte_need_redraw=0xFF;
+				    else if(TFKEY_ALARM==  EventPara.sig_p.key_evt.key_val)
+					{
+                        app_set_alarm_clock();
+						appsys.byte_need_redraw=0xFF;
 					}
-				    else if(TFKEY_OK==  EventPara.sig_p.key_evt.key_val)
-				    {
-#if 1   
-				        char tmp_bb[256];
-						memset(tmp_bb,0,sizeof(tmp_bb));
-
-                        //tmp_bb[0]=0xE1; tmp_bb[1]=0xE9; tmp_bb[2]=0xED; tmp_bb[3]=0xF3; tmp_bb[4]=0xFA; tmp_bb[5]=0xC1; tmp_bb[6]=0xC9; tmp_bb[7]=0xCD; tmp_bb[8]=0xD3; tmp_bb[9]=0xDA;
-				     	sprintf(tmp_bb,"%s\r\npw=%d,bt=%d,adc=%d",appsys.str_debug_msg,appsys.power_service.flag_extern_power, appsys.power_service.flag_having_battery,appsys.power_service.battary_status.adc);
-						
-                        wnd_show_notice(get_multi_string((char * *)text_prompt), tmp_bb, NOTICE_TYPE_NULL,NEED_SOFT_KEY_INPUT);
-#else
-
-             #if 0
-                        app_signal_test_resp();
-                        appsys.byte_need_redraw=0xFF;
-			 #else
-
-                        app_protocols_test();
-			            appsys.byte_need_redraw=0xFF;
-			 #endif
-
-#endif
+				 	else if(TFKEY_MUSIC==  EventPara.sig_p.key_evt.key_val)
+					{
+                        app_select_ring_music();
+						appsys.byte_need_redraw=0xFF;
 					}
-
 
 				 	else if(TFKEY_REDIAL== EventPara.sig_p.key_evt.key_val)
 					{
@@ -487,14 +513,9 @@ void * app_main(void * p)
                            &&(1 == sysprop->flag_encyped_only)
                            &&(0 == appsys.flag_sim_encypted))
 				        )
-				        
-				    &&  (0 == appsys.flag_sms_full)
 				)
                 {
-
-    
 				    process_auto_redraw();// half second redraw
-              
                 }
 
 				if(appsys.flag_time_changed >0)
@@ -513,7 +534,7 @@ void * app_main(void * p)
 					
 				    if(old_minute !=appsys.struct_time.min)
 					{
-                        appsys.byte_need_redraw |=DEFAULT_SCREEN_REFRESH_TIME;
+                        appsys.byte_need_redraw |=DEFAULT_SCREEN_REFRESH_TIME_WFBLU;
 						
                         old_minute=appsys.struct_time.min;
 						if( (old_minute%10) ==0 && 1 == sysprop->flag_lock_base)
@@ -1033,18 +1054,22 @@ void show_network_prompt( void )
 	
 	if(0 == appsys.flag_nouim_emergency_call)
 	{
-	     if(strcmp(appsys.str_operator_name,"null")==0  &&  appsys.byte_csq_level == 0)
+	     if(strcmp(appsys.str_operator_name,"null")==0 )
 	     {
  
 		 }
 		 else
 		 {
+		     if(appsys.byte_csq_level == 0)
+		     {
+
+		     }
              strcpy(tmp_oper, appsys.str_operator_name);		
 		 }
 	}
 	else
 	{
-	     strcpy(tmp_oper,  "Çë²åSIM¿¨");
+	     strcpy(tmp_oper,  get_multi_string((char * *) text_insert_simcard));
 	}
 
     appsys.byte_font_type = FONT_B_X_10;
@@ -1136,6 +1161,9 @@ void show_seg_clock()
     }
 }
 
+
+
+
 void show_clock_time( void )
 {
     char tmp_buf[32];
@@ -1159,6 +1187,19 @@ void show_clock_time( void )
     lcd_goto_xy((SCREEN_WIDTH - get_str_dots_width(tmp_buf)) / 2, 14);
     lcd_put_string(tmp_buf);
 
+    if(1 ==sysprop->flag_wifi_enabled)
+    {
+	    lcd_goto_xy(0,14);
+		show_bitmap(BMP_MAIN_WIFI_BIN);
+    }
+
+    if(1 ==sysprop->flag_blue_enabled)
+    {
+	    lcd_goto_xy(SCREEN_WIDTH-1 - 16 ,14);
+		show_bitmap(BMP_MAIN_BLUETOOTH_BIN);
+    }
+
+	
     show_seg_clock();
 
 }
@@ -1191,7 +1232,7 @@ void app_refresh_default_screen( void )
     {
         app_show_battery(0);
 	}	
-    if( (appsys.byte_need_redraw & DEFAULT_SCREEN_REFRESH_TIME)>0)
+    if( (appsys.byte_need_redraw & DEFAULT_SCREEN_REFRESH_TIME_WFBLU)>0)
     {
         show_clock_time();
     }
@@ -1263,7 +1304,16 @@ void app_refresh_default_screen( void )
 	    lcd_goto_xy(0, 54);
 
         show_soft_key_prompt(get_multi_string((char **) text_menu), get_multi_string((char **) text_book));
+
+        if(1 == appsys.flag_ring_mute)
+        {
+		    lcd_goto_xy((SCREEN_WIDTH-12)/2, 54);
+	        show_bitmap(BMP_MAIN_MUTE_BIN);
+        }
     }
+
+
+
 
 }
 
@@ -1278,7 +1328,7 @@ void run_main_menu( void )
 
     while(0 == appsys.byte_need_exit)
 	{
-	    switch ( (cursor_pos = app_graph_meme(pbmp_menu, (char ***)ppmem_main,6, cursor_pos)) )
+	    switch ( (cursor_pos = app_graph_meme(pbmp_menu, (char ***)ppmem_main,8, cursor_pos)) )
 	    {
 		    case 1:
 	            app_run_books();
@@ -1295,7 +1345,13 @@ void run_main_menu( void )
 	        case 5:
 	            app_run_security_settings();
 	            break;
-	        case 6:
+			case 6:
+                 app_wifi_setting();
+			    break;	
+			case 7:
+				 app_bluetooth_setting();
+				break;
+	        case 8:
 	            app_run_all_settings();  
 	            break;
 	

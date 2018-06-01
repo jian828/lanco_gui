@@ -31,7 +31,6 @@
 
 
 
-//#define __TF_FAKE_CYCLE__
 
 #ifndef NULL
     #define NULL 0
@@ -53,7 +52,7 @@
 #define PKET_DATA_SIZE       (1024)
 
 
-#define MAX_FAST_DIAL_NUMS     (5)
+#define MAX_FAST_DIAL_NUMS     (3)
 
 #define DEBUG_MAX_SIZE       (256)
 #define STBUF_MAX_SIZE       (1200)
@@ -193,20 +192,9 @@
 #define DIALING_RET_PREFIX_RW       (8)
 #define DIALING_RET_PROJECT_TEST    (9)
 #define DIALING_RET_LOCK_OPER       (10)
-#define DIALING_RET_LOCK_BASE       (11)
 #define DIALING_RET_SIM_ENCYPT      (12)
-#define DIALING_RET_TDKEY_QUERY     (13)
-#define DIALING_RET_OPEN_USB        (14)
-#define DIALING_RET_NORMAL_WORK     (17)
 #define DIALING_RET_LOCK_PHONE      (18)
-#define DIALING_RET_SET_IP_PARA     (23)
-#define DIALING_RET_SET_LIFE_SRV    (24)
-#define DIALING_RET_GET_CSQ_VAL     (25)
-#define DIALING_RET_GET_POWER_INFO  (26)
 
-#define DIALING_RET_SET_DOOR_ALMTP    (28)
-#define DIALING_RET_SET_P2P_SNSR_ERR  (29)
-#define DIALING_RET_SET_P2P_LOW_BAT   (30)
 
 #define AUTO_REDIAL_CNT         (3)
 #define AUTO_REDIAL_INTERVAL    (30) // In seconds
@@ -362,8 +350,7 @@
 ///////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////
-
-#define MAX_BMP_COUNT  (66) 
+#define MAX_BMP_COUNT  (71) 
 #define BMP_REGISTERING_BIN (0) 
 #define BMP_ALARM_CLOCK_BIN (1) 
 #define BMP_ARROW_LEFT_BIN (2) 
@@ -430,6 +417,12 @@
 #define BMP_MAIN_SLEEP_BIN (63) 
 #define BMP_MAIN_MAILFUL_BIN (64) 
 #define BMP_MAIN_SPEAKER_BIN (65) 
+#define BMP_MAIN_WIFI_BIN (66) 
+#define BMP_MAIN_BLUETOOTH_BIN (67) 
+#define BMP_TOOLB_BIN (68) 
+#define BMP_TOOLC_BIN (69) 
+#define BMP_TALK_MUTE_BIN (70) 
+
 
 
 
@@ -549,6 +542,14 @@
 
 // keys
 
+      #define TFKEY_SOFT_LEFT   139
+      #define TFKEY_SOFT_RIGHT  158
+	  #define TFKEY_ALARM       251
+	  #define TFKEY_MUSIC       248
+      #define TFKEY_UP          103
+      #define TFKEY_LEFT        105
+      #define TFKEY_RIGHT       106
+      #define TFKEY_DOWN        108
       #define TFKEY_1           2
       #define TFKEY_2           3
       #define TFKEY_3           4
@@ -561,53 +562,37 @@
       #define TFKEY_STAR        122
       #define TFKEY_0           11
       #define TFKEY_SHARP       123
-
-
-
-
-
-      #define TFKEY_SOFT_LEFT   139
-      #define TFKEY_SOFT_RIGHT  158
-
-
-
-      #define TFKEY_SEND        66
-      #define TFKEY_HANDFREE    63
-
-      #define TFKEY_UP          103
-      #define TFKEY_LEFT        105
-      #define TFKEY_RIGHT       106
-      #define TFKEY_DOWN        108
-
-
-
-
+	  #define TFKEY_SEND        132
 	  #define TFKEY_POWER       116
+	  #define TFKEY_MUTE         249
+	  #define TFKEY_REDIAL       67
+      #define TFKEY_HANDFREE     63
+
+	  
 
 
-   
-
+      #define TFKEY_EXIT        TFKEY_POWER
       #define TFKEY_VOL_UP      TFKEY_UP
       #define TFKEY_VOL_DOWN    TFKEY_DOWN
       #define TFKEY_MODE        TFKEY_SHARP
 
-      #define TFKEY_EXIT        TFKEY_POWER
-      #define TFKEY_CONFIRM     28
- 
+
+	  //---------NO USED DEFINE
+      #define TFKEY_CONFIRM     901
+      #define TFKEY_SMS         903
+	  //--------
+	  
 
 
-      #define TFKEY_REDIAL      67
-      #define TFKEY_SMS         61
 
 	  #define TFKEY_ON_HOOK     107
 	  #define TFKEY_OFF_HOOK    231
 
 
 
-      #define TFKEY_PHONEBOOK        68
 
 
-      #define TFKEY_OK       249
+  
 
 
 
@@ -616,12 +601,6 @@
 
 	  
 
-      #define TFKEY_REMAINED    901
-      #define TFKEY_SETUP       903	
-      #define TFKEY_FAST1       904
-	  #define TFKEY_FAST2       905
-      #define TFKEY_FAST3       906
-      #define TFKEY_LVSRV       907
 
 
 
@@ -1183,7 +1162,6 @@ typedef struct APPSYSTag
 	unsigned char flag_dialing;
 	unsigned char flag_dialout_succeed;
 	unsigned char flag_fast_dial;
-	unsigned char flag_setting_fast_dial;
 	unsigned char flag_doing_auto_redial;
 	unsigned char flag_pre_dial;
 	unsigned char flag_talk_rating;
@@ -1192,6 +1170,7 @@ typedef struct APPSYSTag
 	unsigned char flag_redial;
 	unsigned char flag_showing_lowbat;
 	unsigned char flag_sms_full;
+	unsigned char flag_selecting_ring;
 	
 
 	
@@ -1262,6 +1241,9 @@ typedef struct APPSYSTag
 	unsigned char flag_got_459;	
 	unsigned char flag_got_45A;	
 
+
+    unsigned char flag_ring_mute;
+
 	
 
 	unsigned char byte_simcard_state;
@@ -1307,9 +1289,10 @@ typedef struct APPSYSTag
 	unsigned char byte_simcard_book_cnt;
 	unsigned char byte_simsms_idpos;
 	unsigned char byte_simbook_idpos;
-
+	unsigned char byte_delay_cnt_handfree;
 
 	unsigned short word_change_times;
+
 
 	unsigned long dword_last_input_tick;
 	unsigned long dword_last_key_tick;
@@ -1368,7 +1351,6 @@ typedef struct SYSPROPTag
     unsigned char prop_reserved[14]; 
     //===============================	
 
-	unsigned char byte_network_type;
 
 
     unsigned char byte_call_delay_s;	
@@ -1392,9 +1374,10 @@ typedef struct SYSPROPTag
 	unsigned char flag_blue_enabled;
 	unsigned char flag_wifi_enabled;
 	unsigned char flag_simpin_enabled;
-	
+
+
+
 	unsigned char byte_income_ring;
-    unsigned char byte_alarm_ring;
 	unsigned char byte_sms_ring;
 	unsigned char byte_contrast_volume;
 	
@@ -1420,7 +1403,6 @@ typedef struct SYSPROPTag
 	char str_keypad_pin[10];
 	char str_simpin_1[10];
 	char str_additional_prefix[BOOK_ENTRY_NUM_FIELD_SIZE];
-    char str_fast_list[ (BOOK_ENTRY_NUM_FIELD_SIZE+1)*MAX_FAST_DIAL_NUMS];
 	char str_cur_bluetooth[BLUE_WIFI_NAME_LEN];
  	char str_cur_wifi[BLUE_WIFI_NAME_LEN];
 
@@ -1546,13 +1528,14 @@ extern unsigned char get_send_dcs(char * pdt);
 
 extern void app_main();
 extern void app_init_global_vars();
+extern void app_check_valid_paras();
 extern void app_initial_system();
-extern void app_query_hw_info();
+extern void app_query_hw_info(unsigned short wait_ms);
 extern unsigned char app_wait_simcard_ready(int wait_ms);
 extern void app_system_reset();
 extern void app_feed_dog();
 extern void delay_ms(unsigned short timeout_ms);
-extern void app_shut_down();
+extern void app_shut_down(unsigned char flag_reboot);
 extern void app_test_heap();
 extern unsigned char get_crc_value(unsigned char * pdata, unsigned short length);
 extern unsigned char app_get_message(FlSignalBuffer * p_evt );
@@ -1925,6 +1908,7 @@ extern void app_run_super_settings( void );
 extern void app_run_factory_settings();
 extern void app_run_all_settings( void );
 extern void app_run_display_settings( void );
+extern void app_select_ring_music();
 extern void app_run_voice_settings( void );
 extern void app_run_call_ctrl_settings( void );
 extern void app_hardware_test( void );
@@ -1933,10 +1917,6 @@ extern void app_keyboard_test(void);
 extern unsigned char check_if_no_ext_power(unsigned char * pid);
 extern void app_process_alarm_comming_background();
 
-extern void app_set_fast_dial_list( void );
-extern void app_do_fast_dial(unsigned char key_code);
-extern unsigned char app_find_fast_dial(unsigned char key_code, char * fast_number);
-extern void app_set_fast_dial(unsigned char sel_pos);
 
 
 
@@ -2035,6 +2015,7 @@ extern int get_bookinfo_from_simcard();
 extern unsigned char mu_get_csq( void ) ;
 extern unsigned char mu_reg_changed( void );
 extern void mu_set_spk_gain( unsigned char level );
+extern void mu_set_ring_gain( unsigned char level );
 extern void mu_dial_dtmf( char dtmf );  
 extern unsigned char mu_dial_dtmf_str( char * dtmf_str );
 extern void mu_hook_on( void );
@@ -2093,6 +2074,7 @@ extern void app_dial_out(char * init_str);
 extern void app_stop_call(void);
 extern unsigned long get_talked_seconds(T_CALL_RECORD * pcall_record);
 extern void adjust_speech_volume(void);
+extern void adjust_ring_volume();
 extern void talk_phone_call( T_CALL_RECORD * pcall_record ,char * that_name);
 extern unsigned long money_str_to_digit( char * money_str );
 extern void money_digit_to_asc_10( unsigned long d,char * money_str );
@@ -2180,6 +2162,8 @@ extern char * andr_build_438_voc_path(char * str_cmd,char vocpath);
 extern char * andr_build_43A_voc_level(char * str_cmd,unsigned char voc_type, unsigned char voc_lvl);
 extern char * andr_build_43B_shut_phone(char * str_cmd, unsigned char flag_reboot);
 extern char * andr_build_43C_play(char * str_cmd, char dtmf);
+extern char * andr_build_43D1_set_ring_music(char * str_cmd, int  voc_id);
+extern char * andr_build_43D2_set_sms_music(char * str_cmd, char sms_voc);
 
 
 extern char * andr_build_442_query_bluetooth_devices(char * str_cmd);
@@ -2218,6 +2202,9 @@ extern void analyse_android_message(FlSignalBuffer  * p_evt, char * str_msg, int
 extern int ex_atoi(unsigned char * p , int len);
 extern unsigned char get_sms_from_msg(char * str_msg);
 extern unsigned char get_book_from_msg(char * str_msg);
+
+extern int UnicodeToUtf8(unsigned char* pInput, unsigned char *pOutput);  
+extern int Utf8ToUnicode(unsigned char* pInput, unsigned char* pOutput); 
 
 
 

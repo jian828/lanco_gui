@@ -219,6 +219,7 @@ void* LocalSocketSendThread(void * inParam)
   void send_android_command(char * str_cmd)
   {
 		unsigned short  ptr_uni[1023];
+	    unsigned char utf8_data[4000];
 
         int data_len =0;
 		
@@ -233,21 +234,29 @@ void* LocalSocketSendThread(void * inParam)
         {
 		    data_len=MultiByte_WideChar(ptr_uni, str_cmd) *2; 
         }
+        
+        //unicode-->utf-8
+      	memset(utf8_data, 0, sizeof(utf8_data));
+	    data_len = UnicodeToUtf8((unsigned char*)ptr_uni, utf8_data);
 
         if(data_len >0)   
         {
 			CLocalSocketSend* pCMD = CLocalSocketSend::GetInstance(); 
-		    CMessage* msg = CMessage::Allocate( data_len );
+		    CMessage* msg = CMessage::Allocate( data_len +1 );
 			if (msg == NULL) 
 			{
 				printf("CMD Out of Memory");
 			}
-			msg->SetMsgLen(data_len);
-			memcpy(msg->GetMsgBuf(), (unsigned char * )ptr_uni, data_len);
+			
+		    msg->SetMsgLen(data_len + 1);
+		    memcpy(msg->GetMsgBuf(), (unsigned char * )utf8_data, data_len);
+	    	*(msg->GetMsgBuf() + data_len) = 0x0A;
+		
 			if(1 == appsys.flag_genie_trace)
 			{
 			     DebugPrintf("send_android_command gb2312: len=%d msg=%s\r\n", data_len, str_cmd);
 				 print_hex_string("send_android_command unicode", (unsigned char * )ptr_uni,data_len);
+				 print_hex_string("send_android_command utf8", (unsigned char * )utf8_data,data_len);
 			}
 		    msg->SetMsgCode(EVENT_UI_TO_ANDROID);
 			if (!pCMD->Post(msg)) 
@@ -272,6 +281,7 @@ void* LocalSocketSendThread(void * inParam)
 		
 		memset((unsigned char *)ptr_uni,0,sizeof(ptr_uni));
 
+
         if( LANGUAGE_SPANISH== sysprop->byte_language_type  ||  LANGUAGE_PORTUGE== sysprop->byte_language_type)
         {
             a2w(ptr_uni, str_cmd);
@@ -281,6 +291,8 @@ void* LocalSocketSendThread(void * inParam)
         {
 		    data_len=MultiByte_WideChar(ptr_uni, str_cmd) *2; 
         }
+
+		
 
         if(data_len >0)   
         {

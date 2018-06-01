@@ -449,9 +449,11 @@ unsigned char mu_check_sim_valid(int wait_ms)
 
 
 unsigned char mu_get_csq( void ) 
-{
- 
-    return 0; 
+{    
+    char tmp_cmd[128];
+	memset(tmp_cmd,0,sizeof(tmp_cmd));
+    send_android_command(andr_build_44E_get_csq(tmp_cmd));
+    return 1; 
 }
 
 
@@ -536,8 +538,7 @@ unsigned char mu_registering()
 	show_bitmap(BMP_REGISTERING_BIN);
 	appsys.byte_sysrun_state=1;	
 
-    app_query_hw_info();
-	delay_ms(200);
+    app_query_hw_info(200);
 
 	appsys.flag_enable_handfree=1;
 
@@ -546,6 +547,7 @@ unsigned char mu_registering()
 	appsys.flag_sms_full =(app_get_record_used(TABLEINFO_SMS_INBOX) == g_table_info[TABLEINFO_SMS_INBOX].tb_info.rec_max_cnt)?1:0;
 	
     appsys.dword_last_input_tick = app_get_tick_count();
+
 
 	return 1;
 }
@@ -574,6 +576,14 @@ void mu_set_spk_gain( unsigned char level )
     }
 }
 
+void mu_set_ring_gain( unsigned char level )
+{
+    if(level <MAX_VOLUM_LEVEL)
+    {
+	    app_set_voice_volumn(VOCTYPE_INCOMING_CALL, music_volume [level]);
+    }
+}
+
 
 
 
@@ -593,14 +603,8 @@ void mu_set_date_time(DATE * p_date, TIME * p_time)
 void mu_dial_dtmf( char dtmf )  
 {
    char cmd_buf[128];
-   char ctrl_type[2];
-   
    memset(cmd_buf,0,sizeof(cmd_buf));
-   memset(ctrl_type,0,sizeof(ctrl_type));
-   ctrl_type[0]='3';
-
-   send_android_command(andr_build_437_talking_ctrl(cmd_buf, ctrl_type, dtmf));
-
+   send_android_command(andr_build_437_talking_ctrl(cmd_buf, "3", dtmf));
 }
 unsigned char mu_dial_dtmf_str( char * dtmf_str )  
 {
@@ -685,6 +689,8 @@ unsigned char mu_set_voice_path( unsigned char voc_path )
     char tmp_cmd[128];
 	memset(tmp_cmd,0,sizeof(tmp_cmd));
 	if(1 ==appsys.flag_genie_trace)DebugPrintf("set voice path to %s\r\n" , (VOICE_PATH_HANDSET== voc_path)? "handset" : "handfree");
+
+    appsys.byte_delay_cnt_handfree=0;
 
     app_disable_speaker();
 	
@@ -786,20 +792,24 @@ void mu_active_holded_call( unsigned char id )
 
 unsigned char mu_mute_mic( ) 
 {
+    char cmd_buf[128];
+	memset(cmd_buf,0,sizeof(cmd_buf));
+	
+  
+    send_android_command(andr_build_437_talking_ctrl(cmd_buf, "1", '1'));
+
     appsys.flag_muted=1;
 
-
-
-
-    return 0;
+    return 1;
 }
 unsigned char mu_cancel_mute_mic(  ) 
 {
+    char cmd_buf[128];
+	memset(cmd_buf,0,sizeof(cmd_buf));
+    send_android_command(andr_build_437_talking_ctrl(cmd_buf, "1", '0'));
+
     appsys.flag_muted=0;
-
-
-
-    return 0;
+    return 1;
 }
 
 void mu_delete_message( unsigned char sm_index )    

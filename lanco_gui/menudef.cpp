@@ -105,6 +105,8 @@ const char * const * const mem_main[]=
 	text_messaging,
 	text_alarm_clock,
 	text_security,
+	text_wifi,
+	text_bluetooth,
 	text_settings,
 };
 
@@ -206,6 +208,14 @@ const char * const * const mem_in_sm_detial_opt[] =
 
 };
 
+
+const char * const * const mem_simbook_opt[] =
+{
+	text_simbook_options,
+	text_call_back,
+	text_add_to_phonebook,	
+};
+
 const char * const * const mem_out_sm_detial_opt[] =
 {
 	text_message_options,
@@ -272,9 +282,6 @@ const char * const * const mem_calls[]=
 		text_date_and_time,
 		text_voice_settings,
 		text_call_control,
-		text_fast_number_setting,
-		text_bluetooth_settings,
-		text_wifi_settings,
 		text_software_version,
 		text_factory_settings,
 	};
@@ -369,6 +376,8 @@ const char * const * const mem_test[]=
 	text_handfree_test,
 	text_lcd_test,
 	text_bat_test,
+	text_expw_test,
+	text_signal_test,
     text_echo_test,	
 };
 

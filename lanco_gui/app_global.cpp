@@ -10,12 +10,6 @@
 
 
 extern CSystemUIManager* pUI;
-unsigned char gmap_mdm[0xffff];
-int  gmap_mdm_len;
-
-
-
- 
 
 
 
@@ -206,18 +200,7 @@ void app_init_global_vars()
 
 void app_system_reset()
 {
-
-   if(1 == appsys.byte_sysrun_state)
-   {
-       appsys.byte_sysrun_state=0;
-	   delay_ms(500);
-   }
-   msg(get_combined_string(get_multi_string((char * *)text_system_reset), "\n", get_multi_string((char * *)text_please_wait)));
-   delay_ms(500);
-   {
-
-		while(1);
-   }
+    app_shut_down(1);
 }
 
 
@@ -374,7 +357,7 @@ void app_power_service()
 	}
 }
 
-void app_query_hw_info()
+void app_query_hw_info(unsigned short wait_ms)
 {
    char tmp_cmd[128];
 
@@ -390,7 +373,7 @@ void app_query_hw_info()
    memset(tmp_cmd,0,sizeof(tmp_cmd));
    send_android_command(andr_build_44F_get_andr_ver(tmp_cmd));
 
-   delay_ms(150);
+   delay_ms(wait_ms);
 }
 
 
@@ -795,14 +778,14 @@ unsigned char check_if_too_fast_key(void)
 
 
 
-void app_shut_down()
+void app_shut_down(unsigned char flag_reboot)
 {
     char tmp_cmd[128];
 	app_stop_music();
     wnd_show_notice(get_multi_string((char * *)text_prompt), get_combined_string(get_multi_string((char * *) text_power_down), ",", get_multi_string((char * *)text_please_wait) ), NOTICE_TYPE_NULL, IGNORE_SOFT_KEY_INPUT);
 
 	memset(tmp_cmd,0,sizeof(tmp_cmd));
-	send_android_command(andr_build_43B_shut_phone(tmp_cmd,0));
+	send_android_command(andr_build_43B_shut_phone(tmp_cmd, (1 == flag_reboot)?1:0));
 
 	while(1){delay_ms(1000);}
 }
@@ -816,7 +799,6 @@ unsigned char is_valid_key(unsigned char key_code)
 	case TFKEY_SOFT_RIGHT:
 	case TFKEY_POWER:
 	case TFKEY_SMS:
-	case TFKEY_SETUP:
 	case TFKEY_UP:
 	case TFKEY_LEFT:
 	case TFKEY_DOWN:
@@ -835,9 +817,6 @@ unsigned char is_valid_key(unsigned char key_code)
 	case TFKEY_SHARP:
 	case TFKEY_SEND:
 	case TFKEY_HANDFREE:
-	case TFKEY_FAST1:
-	case TFKEY_FAST2:
-	case TFKEY_FAST3:
 	{   
 	    return 1;  
 	}   
@@ -932,10 +911,18 @@ unsigned char app_get_message(FlSignalBuffer  * p_evt )
 	  		   char * uni_buf = new char[pMsg->mMsgBufLen+2];
 			   memset(uni_buf,0, pMsg->mMsgBufLen +2);
 			   memcpy(uni_buf,pMsg->mMsgBuf, pMsg->mMsgBufLen);
-			   
 			   memset(ansi_buf,0,sizeof(ansi_buf));
 
+
+
+			   if(1 == appsys.flag_genie_trace)
+			   {
+				   print_hex_string("ANDROID MSG UNIC",pMsg->mMsgBuf, pMsg->mMsgBufLen);
+               }
+
+
                ansi_len = WideChar_MultiByte(ansi_buf, (unsigned short *) uni_buf);
+
 			   
 		       if( ansi_len>=5)
 		       {
@@ -1160,6 +1147,8 @@ unsigned char app_pre_process_msg(FlSignalBuffer  * p_evt )
 			    if(0 == appsys.flag_sending_sms 
 				&& 0 == appsys.flag_call_comming 
                 && 0 == appsys.flag_dialing
+                && 0 == appsys.flag_selecting_ring
+                && (TFKEY_POWER != p_evt->sig_p.key_evt.key_val)
 				)
 			    {  
                     mu_generate_beep();
@@ -1169,7 +1158,7 @@ unsigned char app_pre_process_msg(FlSignalBuffer  * p_evt )
 
 			if(0 == flag_beep_done)
 			{
-				if(1 == appsys.flag_genie_trace)DebugPrintf("flag_need_beep=%d\r\n",flag_need_beep);
+				if(1 == appsys.flag_genie_trace)DebugPrintf("flag_need_beep=%d, flag_selecting_ring=%d\r\n",flag_need_beep,appsys.flag_selecting_ring);
 				if(1 == appsys.flag_genie_trace)DebugPrintf("p_evt->sig_p.key_evt.key_val=0x%02X\r\n",p_evt->sig_p.key_evt.key_val);
 				if(1 == appsys.flag_genie_trace)DebugPrintf("appsys.flag_hardware_test=%d\r\n",appsys.flag_hardware_test);
 				if(1 == appsys.flag_genie_trace)DebugPrintf("appsys.flag_sending_sms=%d\r\n",appsys.flag_sending_sms);
@@ -1243,32 +1232,7 @@ unsigned char app_pre_process_msg(FlSignalBuffer  * p_evt )
 			}
 		}
 
-		
-		else if( TFKEY_REMAINED == p_evt->sig_p.key_evt.key_val
-        ||TFKEY_LVSRV == p_evt->sig_p.key_evt.key_val 
-        ||TFKEY_FAST1 == p_evt->sig_p.key_evt.key_val 
-        ||TFKEY_FAST2 == p_evt->sig_p.key_evt.key_val 
-        ||TFKEY_FAST3 == p_evt->sig_p.key_evt.key_val 
-		)
-		{
-             if(   (0   == appsys.flag_sending_sms)  
-			 	&& (1 == p_evt->sig_p.key_evt.isPressed)
-			 	&& (0 == appsys.flag_voice_doing)
-			 	&& (0xFF== appsys.byte_sysrun_state) 
-			 	&& (0 == appsys.flag_talk_rating)
-			 	&& (0 == appsys.flag_call_comming)
-			 	&& (0 == appsys.flag_dialing)
-			 	&& (0 == appsys.flag_alarm_ringing)
-			 	&& (0 == appsys.flag_sending_sms)
-			 	&& (0 == appsys.flag_doing_auto_redial)
-			 	&& (0 == sysprop->flag_lock_phone)
-			 	&& (0 == appsys.flag_setting_fast_dial)
-			 	&& (0 == appsys.flag_nouim_emergency_call)
-			 )
-             {
-		         app_do_fast_dial(p_evt->sig_p.key_evt.key_val);
-             }
-		}
+	
 
 	}
 	else if(EVENT_HANDSET == p_evt->eventTyp)
@@ -1351,6 +1315,16 @@ unsigned char app_pre_process_msg(FlSignalBuffer  * p_evt )
 			}
 		}
 
+		if(appsys.byte_delay_cnt_handfree >0)
+		{
+		    appsys.byte_delay_cnt_handfree--;
+			if(0 == appsys.byte_delay_cnt_handfree)
+			{
+			     if(1 == appsys.flag_genie_trace)DebugPrintf("[delay] for set voice path to handfree\r\n");
+			     mu_set_voice_path(VOICE_PATH_HANDFREE);
+			}
+		}
+
 
 
 		if(MAX_INT32_FFFFFFFF != appsys.power_service.dword_no_ext_power_st && 0xFF== appsys.byte_sysrun_state)
@@ -1373,7 +1347,7 @@ unsigned char app_pre_process_msg(FlSignalBuffer  * p_evt )
                 if( 0 == appsys.flag_waiting_power_down)
                 {
                     appsys.flag_waiting_power_down=1;
-                    app_shut_down();
+                    app_shut_down(0);
                 }
 			}	
 		}
@@ -2338,7 +2312,7 @@ void app_set_lcd_contrast()
 						    }
 							return;
 						}
-						else if(TFKEY_VOL_UP==EventPara.sig_p.key_evt.key_val  )
+						else if(TFKEY_UP==EventPara.sig_p.key_evt.key_val || TFKEY_RIGHT==EventPara.sig_p.key_evt.key_val  )
 						{
 	                        if(cur_lvl<(lvl_nums-1))
 	                        {
@@ -2346,7 +2320,7 @@ void app_set_lcd_contrast()
 	                            appsys.byte_need_redraw=1;
 							}
 						}
-						else if(TFKEY_VOL_DOWN==EventPara.sig_p.key_evt.key_val  )
+						else if(TFKEY_LEFT==EventPara.sig_p.key_evt.key_val || TFKEY_DOWN==EventPara.sig_p.key_evt.key_val )
 						{
 	                        if(cur_lvl>0)
 	                        {
@@ -2426,7 +2400,7 @@ void app_set_ring_volume()
 						    }
 							break;
 						}
-						else if(TFKEY_VOL_UP==EventPara.sig_p.key_evt.key_val  )
+						else if(TFKEY_UP==EventPara.sig_p.key_evt.key_val || TFKEY_RIGHT==EventPara.sig_p.key_evt.key_val )
 						{
 	                        if(cur_lvl<(lvl_nums-1))
 	                        {
@@ -2434,7 +2408,7 @@ void app_set_ring_volume()
 	                            appsys.byte_need_redraw=1;
 							}
 						}
-						else if(TFKEY_VOL_DOWN==EventPara.sig_p.key_evt.key_val  )
+						else if(TFKEY_LEFT==EventPara.sig_p.key_evt.key_val  || TFKEY_DOWN==EventPara.sig_p.key_evt.key_val )
 						{
 	                        if(cur_lvl>0)
 	                        {
@@ -2483,13 +2457,13 @@ void app_set_sms_volume()
             
 	         app_volumn_setting(lvl_nums, cur_lvl);
 
-
-		     app_play_alarm_ring( sysprop->struct_alarm.alarm_ring, 0);
-
 			 if(cur_lvl < MAX_VOLUM_LEVEL)
 			 {
-			     app_set_voice_volumn(VOCTYPE_SMS_INCOMING, sms_volume [cur_lvl]);
+				 app_set_voice_volumn(VOCTYPE_SMS_INCOMING, sms_volume [cur_lvl]);
 			 }
+
+             app_play_sms_ring(   sysprop->byte_sms_ring);
+			 
 			appsys.byte_need_redraw=0;
 		 }
 		 else
@@ -2515,7 +2489,7 @@ void app_set_sms_volume()
 						    }
 							break;
 						}
-						else if(TFKEY_VOL_UP==EventPara.sig_p.key_evt.key_val  )
+						else if(TFKEY_UP==EventPara.sig_p.key_evt.key_val  || TFKEY_RIGHT==EventPara.sig_p.key_evt.key_val)
 						{
 	                        if(cur_lvl<(lvl_nums-1))
 	                        {
@@ -2523,7 +2497,7 @@ void app_set_sms_volume()
 	                            appsys.byte_need_redraw=1;
 							}
 						}
-						else if(TFKEY_VOL_DOWN==EventPara.sig_p.key_evt.key_val  )
+						else if(TFKEY_LEFT==EventPara.sig_p.key_evt.key_val || TFKEY_DOWN==EventPara.sig_p.key_evt.key_val )
 						{
 	                        if(cur_lvl>0)
 	                        {
@@ -2601,7 +2575,7 @@ void app_set_speech_volume()
 						    }
 							break;
 						}
-						else if(TFKEY_VOL_UP==EventPara.sig_p.key_evt.key_val  )
+						else if(TFKEY_UP==EventPara.sig_p.key_evt.key_val || TFKEY_RIGHT==EventPara.sig_p.key_evt.key_val )
 						{
 	                        if(cur_lvl<(lvl_nums-1))
 	                        {
@@ -2609,7 +2583,7 @@ void app_set_speech_volume()
 	                            appsys.byte_need_redraw=1;
 							}
 						}
-						else if(TFKEY_VOL_DOWN==EventPara.sig_p.key_evt.key_val  )
+						else if(TFKEY_LEFT==EventPara.sig_p.key_evt.key_val  || TFKEY_DOWN==EventPara.sig_p.key_evt.key_val)
 						{
 	                        if(cur_lvl>0)
 	                        {
@@ -2912,6 +2886,8 @@ void app_view_version( void )
 					     }
 						 else if( (TFKEY_SOFT_LEFT==EventPara.sig_p.key_evt.key_val))
 						 {
+						     msg(get_multi_string((char * *) text_please_wait));
+						     app_query_hw_info(500);
 						     wnd_show_notice(get_multi_string((char * *)text_prompt), appsys.str_andr_ver, NOTICE_TYPE_INFO,NEED_SOFT_KEY_INPUT);
 					     }
 					 }
@@ -3126,7 +3102,7 @@ unsigned char app_bluetooth_device_query(unsigned char * def_pos)
 	   }
 
 
-	   if(1 == choose_menu_option_ex((char ***)pmenus, appsys.byte_blue_cnt, def_pos, 0, MENU_STYLE_MUSIC_VOICE))
+	   if(1 == choose_menu_option((char ***)pmenus, appsys.byte_blue_cnt, def_pos))
 	   {
 	       strcpy(sysprop->str_cur_bluetooth, appsys.BLUE_LIST[ *def_pos]);
 		   app_save_prop();
@@ -3262,7 +3238,7 @@ unsigned char app_wifi_device_query(unsigned char * def_pos)
 	   }
 
 
-	   if(1 == choose_menu_option_ex((char ***)pmenus, appsys.byte_wifi_cnt, def_pos, 0, MENU_STYLE_MUSIC_VOICE))
+	   if(1 == choose_menu_option((char ***)pmenus, appsys.byte_wifi_cnt, def_pos))
 	   {
 	       strcpy(sysprop->str_cur_wifi, appsys.WIFI_LIST[ *def_pos]);
 		   app_save_prop();
@@ -3584,6 +3560,9 @@ void app_play_sms_ring(unsigned char smsvoc_id)
 		app_enable_speaker();
 	 	if(1 ==appsys.flag_genie_trace)DebugPrintf("play smsring music_id=%c\r\n", smsring_array[smsvoc_id] );
 		send_android_command( andr_build_43C_play(tmp_cmd, smsring_array[smsvoc_id]));
+
+	 	appsys.byte_last_music_id= smsring_array[smsvoc_id];
+		appsys.byte_music_max_time=0;
     }
 	else
 	{
@@ -3669,10 +3648,6 @@ void process_recv_call()
 
          flag_played_music_incom=1;
 		 
-
-         //app_play_income_ring(sysprop->byte_income_ring, 60); //removed by JEOWILL 20180521
-
-	 
 		 
 		 while(1)
 	     {
@@ -3696,14 +3671,14 @@ void process_recv_call()
 				 }
 				 else
 				 {
-                     lcd_put_string("未知号码");
+                     lcd_put_string(get_multi_string((char * *)text_no_name));
 				 }
 				 
 				 if(strlen(book_entry.name)>0)
 				 {
 				     char tmp_buf[32];
 					 memset(tmp_buf,0,sizeof(tmp_buf));
-					 sprintf(tmp_buf,"来电 (%s)", book_entry.name);
+					 sprintf(tmp_buf," (%s)", book_entry.name);
 					 if(get_str_dots_width(tmp_buf) >100)
 					 {
 					     show_caption(book_entry.name);
@@ -3754,10 +3729,6 @@ void process_recv_call()
 									  flag_accept=1;
 						          }
 								  break;
-							 }
-							 else if(TFKEY_PHONEBOOK== EventPara.sig_p.key_evt.key_val)
-							 {
-			                     send_android_command("2,3,2");
 							 }
 						 }
 			         }
@@ -3922,6 +3893,7 @@ unsigned char app_music_show(unsigned char * def_pos)
    temp_menus[0][0]=(char *)(text_music_select[0]);
    temp_menus[0][1]=(char *)(text_music_select[1]);   
    temp_menus[0][2]=(char *)(text_music_select[2]);  
+   temp_menus[0][3]=(char *)(text_music_select[3]);  
    
    temp_menus[1][0]=temp_menus[1][1]=temp_menus[1][2]=temp_menus[1][3]="AUDIO_1";
    temp_menus[2][0]=temp_menus[2][1]=temp_menus[2][2]=temp_menus[2][3]="AUDIO_2";
@@ -3995,6 +3967,7 @@ unsigned char app_smsring_show(unsigned char * def_pos)
    temp_menus[0][0]=(char *)(text_music_select[0]);
    temp_menus[0][1]=(char *)(text_music_select[1]);   
    temp_menus[0][2]=(char *)(text_music_select[2]);  
+   temp_menus[0][3]=(char *)(text_music_select[3]);  
    
    temp_menus[1][0]=temp_menus[1][1]=temp_menus[1][2]=temp_menus[1][3]="SMS_VOC_1";
    temp_menus[2][0]=temp_menus[2][1]=temp_menus[2][2]=temp_menus[2][3]="SMS_VOC_2";
@@ -4846,14 +4819,14 @@ void app_battery_test()
 				 lcd_goto_xy(3, 38);
 				 lcd_clear_line(SCREEN_WIDTH-3);
 				 lcd_goto_xy(3, 38);
-	             lcd_put_string(get_multi_string((char * *)text_battary_level));
+	             lcd_put_string(get_multi_string((char * *)text_battary_level));lcd_put_string(": ");
 				 {
 	                 unsigned char lvl= get_battery_lvl();
 					 if(lvl<=2)
 					 {
 	                     lcd_put_string(get_multi_string((char * *)text_low));
 					 }
-					 else if (lvl<=5)
+					 else if (lvl<=3)
 					 {
 	                     lcd_put_string(get_multi_string((char * *)text_middle));
 					 }
@@ -4879,6 +4852,8 @@ void app_battery_test()
 						}  
 						else if( TFKEY_SOFT_LEFT== EventPara.sig_p.key_evt.key_val|| (TFKEY_CONFIRM ==EventPara.sig_p.key_evt.key_val))
 						{
+						     msg(get_multi_string((char * *)text_please_wait));
+							 delay_ms(280);
 							 appsys.byte_need_redraw=0xFF;
 						}
 				 	}
@@ -5141,7 +5116,7 @@ void show_device_csq_level()
 			appsys.byte_need_redraw=0;
 			lcd_clear_screen();
 			
-			show_caption("信号查询");
+			show_caption("信号与网络");
 
             lcd_put_rect(0, 12, SCREEN_WIDTH-1, 51);
 
@@ -5150,18 +5125,33 @@ void show_device_csq_level()
 		    appsys.byte_font_type=FONT_T_X_10;
             lcd_goto_x_line(3, 1);
 		    lcd_clear_line(SCREEN_WIDTH-3);
-
-		
 		    lcd_goto_x_line(3, 1);
-			sprintf(str_show,"CSQ:%d NET:%s(%s)",  appsys.byte_csq_level, (appsys.byte_csq_level>100)?"T":"G", (appsys.byte_csq_level>100)?"101-170":"1-31" );
-		    lcd_put_string(str_show);
+
+			lcd_put_string("运营商: ");lcd_put_string(appsys.str_operator_name);
 		
-		   	
             lcd_goto_x_line(3, 2);
 		    lcd_clear_line(SCREEN_WIDTH-3);	
             lcd_goto_x_line(3, 2);		   
-			sprintf(str_show,"ERRT:%d 信号等级:%d", appsys.byte_err_rate,convert_csq_level_grade(appsys.byte_csq_level));
+			sprintf(str_show,"CSQ等级: %d 网络: ",  appsys.byte_csq_level );
 		    lcd_put_string(str_show);
+		
+
+	        switch(appsys.byte_net_state)
+	        {
+	             case 1:
+				 	lcd_put_string("2G");
+					 break;
+				 case 2:
+				 	lcd_put_string("3G");
+					 break;
+				 case 3:
+				 	lcd_put_string("4G");
+					 break;
+				 case 0:
+				 default:
+				 	lcd_put_string("未知");
+				 	break;
+			}
 
 			if(1)
 			{
@@ -5232,7 +5222,7 @@ void show_device_power_info()
 			appsys.byte_need_redraw=0;
 			lcd_clear_screen();
 			
-			show_caption("电源电池");
+			show_caption(get_multi_string((char * *) text_check));
 
             lcd_put_rect(0, 12, SCREEN_WIDTH-1, 51);
 
@@ -5244,14 +5234,13 @@ void show_device_power_info()
 
 		
 		    lcd_goto_x_line(3, 1);
-			sprintf(str_show,"外电检测:%s",   (appsys.power_service.flag_extern_power==1)?"有":"无");
+			sprintf(str_show,"外电:%s",   (appsys.power_service.flag_extern_power==1)?"有":"无");
 		    lcd_put_string(str_show);
 		
 		   	
             lcd_goto_x_line(3, 2);
 		    lcd_clear_line(SCREEN_WIDTH-3);	
             lcd_goto_x_line(3, 2);		   
-			//appsys.power_service.battary_status.adc =0; //get adc;
 			sprintf(str_show,"电池检测:%s ADC=%d", (appsys.power_service.flag_having_battery==1)?"有":"无", appsys.power_service.battary_status.adc);
 		    lcd_put_string(str_show);
 
@@ -6976,16 +6965,22 @@ void app_show_sim_book_array()
          {
 		     lcd_clear_screen();
 
-			 show_caption(get_multi_string((char * *)text_simcard_book));
+	
 			
        
 
-			 memset(tmp_buf,0,sizeof(tmp_buf));
+			
 
              if(appsys.byte_simcard_book_cnt>0)
              {
+
+                 memset(tmp_buf,0,sizeof(tmp_buf));
+
+			     sprintf(tmp_buf,"%s (%d/%d)", get_multi_string((char * *)text_simcard_book),(appsys.byte_simbook_idpos +1), appsys.byte_simcard_book_cnt);
+	        	 show_caption(tmp_buf);
+			 
              	 memset(&book_entry,0,sizeof(book_entry));
-				 if(1 == mu_getsimcard_book(appsys.byte_simbook_idpos +1 , &book_entry))
+				 if(1 == mu_getsimcard_book((appsys.byte_simbook_idpos +1) , &book_entry))
 				 {			 
 					 lcd_goto_x_line(3, 1);lcd_clear_line(SCREEN_WIDTH-3);
 					 lcd_goto_x_line(3, 2);lcd_clear_line(SCREEN_WIDTH-3);	
@@ -6993,28 +6988,22 @@ void app_show_sim_book_array()
 
 					 lcd_goto_x_line(3, 1);
 					 
-	                 sprintf(tmp_buf,"第%d条, 共%d条", (appsys.byte_simbook_idpos +1), appsys.byte_simcard_book_cnt);
-					 lcd_put_string(tmp_buf);
+	    		     lcd_put_string(book_entry.name);
 					 
 					 lcd_goto_x_line(3, 2);
 
-				     lcd_put_string(book_entry.name);
+				     lcd_put_string(book_entry.num);
 					
 					 
 				     lcd_goto_x_line(3, 3);
 
-					 lcd_put_string(book_entry.num);
-
-					 
-					
-					 
 					 flag_valid_book =1;
 				 }
 				 else
 				 { 
 					 lcd_goto_x_line(3, 2);lcd_clear_line(SCREEN_WIDTH-3);
 					 lcd_goto_x_line(3, 2);			 
-	                 strcpy(tmp_buf,"  此用户/号码不可显示");
+	                 strcpy(tmp_buf," ");
 					 lcd_put_string(tmp_buf);
 					 flag_valid_book=0;
 				 }
@@ -7041,7 +7030,24 @@ void app_show_sim_book_array()
 						 {
 						    if(1 == flag_valid_book)
 						    {
-                                //先不做具体业务吧。2018-05-09
+
+								    switch ( app_menu_select((char ***)mem_simbook_opt, 2, NULL) )
+				                    {
+				                        case 1:
+					                        appsys.flag_hand_free= ( HOOK_STATE_OFFHOOK == appsys.flag_hook_state)?0:1;
+											if(1 ==set_voice_path_by_action(VOICE_ACTION_KEY))
+											{
+				                                 app_dial_out(book_entry.num);
+											}
+				                            break;
+
+				                        case 2:
+											new_book_entry(book_entry.num);
+				                            break;
+											
+				                        default:
+				                            break;
+				                    }
 							}
 					     }
 					     if( (TFKEY_SOFT_RIGHT==EventPara.sig_p.key_evt.key_val)||(TFKEY_EXIT==EventPara.sig_p.key_evt.key_val))
@@ -7077,6 +7083,16 @@ void app_show_sim_book_array()
                                      appsys.byte_simbook_idpos=0;
 								 }
 								 appsys.byte_need_redraw=0xFF;
+						     }
+						 }
+						 else if(TFKEY_SEND==EventPara.sig_p.key_evt.key_val)
+						 {
+			                 appsys.flag_hand_free= ( HOOK_STATE_OFFHOOK == appsys.flag_hook_state)?0:1;
+						     if(1 ==set_voice_path_by_action(VOICE_ACTION_KEY))
+						     {
+						          appsys.flag_fast_dial=1;
+			                      app_dial_out(book_entry.num);
+								  appsys.flag_fast_dial=0;
 						     }
 						 }
 					 }
@@ -7216,6 +7232,21 @@ char * andr_build_43C_play(char * str_cmd, char dtmf)
    str_cmd[strlen(str_cmd)] = dtmf; 
    return str_cmd;
 }
+
+char * andr_build_43D1_set_ring_music(char * str_cmd, int  voc_id)
+{
+   strcat(str_cmd,"3,D,1,"); 
+   sprintf(&str_cmd[strlen(str_cmd)],"%d",voc_id); 
+   return str_cmd;
+}
+
+char * andr_build_43D2_set_sms_music(char * str_cmd, char sms_voc)
+{
+   strcat(str_cmd,"3,D,2,"); 
+   str_cmd[strlen(str_cmd)] = sms_voc; 
+   return str_cmd;
+}
+
 
 
 //--------------------------------------------------------------------
@@ -7817,7 +7848,7 @@ void analyse_android_message(FlSignalBuffer  * p_evt, char * str_msg, int msg_le
 				         {
 				             if(sysprop->byte_sms_ring < MAX_SMS_RING_CNT)
 				             {
-						         app_play_sms_ring(sysprop->byte_sms_ring);
+						        // app_play_sms_ring(sysprop->byte_sms_ring);   //由ANDROID后台播放；
 				             }
 				         }
 						 
@@ -7982,7 +8013,7 @@ void analyse_android_message(FlSignalBuffer  * p_evt, char * str_msg, int msg_le
 					{
                        	if(str_msg[4] =='0'  || str_msg[4] =='1' || str_msg[4] =='2'  || str_msg[4] =='3' || str_msg[4] =='4' )
 						{
-	                        appsys.byte_csq_level= str_msg[8]-0x30;
+	                        appsys.byte_csq_level= str_msg[4]-0x30;
 						}
 					else {appsys.byte_csq_level =0;}
 				  	}
@@ -8018,3 +8049,107 @@ void analyse_android_message(FlSignalBuffer  * p_evt, char * str_msg, int msg_le
 	}
 }
 
+//syw add 20180521
+int UnicodeToUtf8(unsigned char* pInput, unsigned char *pOutput)    
+{
+    int len = 0; //记录转换后的Utf8字符串的字节数
+    while (*pInput)
+    {
+        //处理一个unicode字符
+        unsigned char low = *pInput;//取出unicode字符的低8位
+        pInput++;
+        unsigned char high = *pInput;//取出unicode字符的高8位
+        unsigned short wchar = high;
+		wchar = ((wchar << 8) & 0xff00);
+		wchar |= low;
+		printf("\n UnicodeToUtf8:%4x.\n", wchar);
+        if (wchar <= 0x7F ) //英文字符
+        {
+            pOutput[len] = (char)wchar;  //取wchar的低8位
+            len++;
+        }
+        else if (wchar >=0x80 && wchar <= 0x7FF)  //可以转换成双字节pOutput字符
+        {
+            pOutput[len] = 0xc0 |((wchar >> 6)&0x1f);  //取出unicode编码低6位后的5位，填充到110yyyyy 10zzzzzz 的yyyyy中
+            len++;
+            pOutput[len] = 0x80 | (wchar & 0x3f);  //取出unicode编码的低6位，填充到110yyyyy 10zzzzzz 的zzzzzz中
+            len++;
+        }
+        else if (wchar >=0x800 && wchar < 0xFFFF)  //可以转换成3个字节的pOutput字符
+        {
+            pOutput[len] = 0xe0 | ((wchar >> 12)&0x0f);  //高四位填入1110xxxx 10yyyyyy 10zzzzzz中的xxxx
+            len++;
+			int mid = (0x80 | ((wchar >> 6) & 0x3f));
+			printf("\n UnicodeToUtf8 mid :%4x.\n", mid);
+            pOutput[len] = mid;  //中间6位填入1110xxxx 10yyyyyy 10zzzzzz中的yyyyyy
+            len++;
+            pOutput[len] = 0x80 | (wchar & 0x3f);  //低6位填入1110xxxx 10yyyyyy 10zzzzzz中的zzzzzz  
+            len++;
+        } 
+
+        else //对于其他字节数的unicode字符不进行处理
+        {
+            return -1;
+        }
+        pInput ++;//处理下一个unicode字符
+    }
+    //utf8字符串后面，有个\0
+    pOutput [len]= 0;
+    return len;
+}
+
+int Utf8ToUnicode(unsigned char* pInput, unsigned char* pOutput)  
+{
+    int outputSize = 0; //记录转换后的Unicode字符串的字节数
+
+    while (*pInput)
+    {
+        if (*pInput > 0x00 && *pInput <= 0x7F) //处理单字节UTF8字符（英文字母、数字）
+        {
+            *pOutput = *pInput;
+             pOutput++;
+            *pOutput = 0; //小端法表示，在高地址填补0
+        }
+        else if (((*pInput) & 0xE0) == 0xC0) //处理双字节UTF8字符
+        {
+            unsigned char high = *pInput;
+            pInput++;
+            unsigned char low = *pInput;
+            if ((low & 0xC0) != 0x80)  //检查是否为合法的UTF8字符表示
+            {
+                return -1; //如果不是则报错
+            }
+
+            *pOutput = (high << 6) + (low & 0x3F);
+            pOutput++;
+            *pOutput = (high >> 2) & 0x07;
+        }
+        else if (((*pInput) & 0xF0) == 0xE0) //处理三字节UTF8字符
+        {
+            unsigned char high = *pInput;
+            pInput++;
+            unsigned char middle = *pInput;
+            pInput++;
+            unsigned char low = *pInput;
+            if (((middle & 0xC0) != 0x80) || ((low & 0xC0) != 0x80))
+            {
+                return -1;
+            }
+            *pOutput = (middle << 6) + (low & 0x3F);//取出middle的低两位与low的低6位，组合成unicode字符的低8位
+            pOutput++;
+            *pOutput = (high << 4) + ((middle >> 2) & 0x0F); //取出high的低四位与middle的中间四位，组合成unicode字符的高8位
+        }
+        else //对于其他字节数的UTF8字符不进行处理
+        {
+            return -1;
+        }
+        pInput ++;//处理下一个utf8字符
+        pOutput ++;
+        outputSize += 2;
+    }
+    //unicode字符串后面，有两个\0  
+    *pOutput = 0;
+     pOutput++;
+    *pOutput = 0;
+    return outputSize;
+}

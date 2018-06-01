@@ -38,7 +38,6 @@ unsigned char compare_special_numbers( char *numbers )
 	}
     else if( 0 == strncmp("*#1004#", numbers, 7) )
     {
-	   return DIALING_RET_LOCK_BASE;
 	}
     else if( 0 == strncmp("*#1006#", numbers, 7) )
     {
@@ -46,18 +45,15 @@ unsigned char compare_special_numbers( char *numbers )
 	}	
     else if( 0 == strncmp("*#737#", numbers, 6) )
     {
-	   return DIALING_RET_TDKEY_QUERY;
 	}	
     else if( 0 == strncmp("*#3166#", numbers, 7) )
     {
-	   return DIALING_RET_OPEN_USB;
 	}	
     else if( 0 == strncmp("*#3155#", numbers, 7) )
     {
 	}	
     else if( 0 == strncmp("*#3177#", numbers, 7) )
     {
-	   return DIALING_RET_NORMAL_WORK;
 	}	
     else if( 0 == strncmp("*#3188#", numbers, 7) )
     {
@@ -74,27 +70,22 @@ unsigned char compare_special_numbers( char *numbers )
 
     else if ( 0 == strncmp("*#3106#", numbers, 7) )
     {
-	   return DIALING_RET_SET_IP_PARA;
 	}	
     else if ( 0 == strncmp("*#3107#", numbers, 7) )
     {
-	   return DIALING_RET_SET_LIFE_SRV;
+
 	}	
     else if ( 0 == strncmp("*#3108#", numbers, 7) )
     {
-	   return DIALING_RET_GET_CSQ_VAL;
 	}	
     else if ( 0 == strncmp("*#3109#", numbers, 7) )
     {
-	   return DIALING_RET_GET_POWER_INFO;
 	}	
     else if ( 0 == strncmp("*#3211#", numbers, 7) )
     {
-	   return DIALING_RET_SET_P2P_SNSR_ERR;
 	}	
     else if ( 0 == strncmp("*#3212#", numbers, 7) )
     {
-	   return DIALING_RET_SET_P2P_LOW_BAT;
 	}	
 	
 
@@ -169,7 +160,15 @@ unsigned char set_voice_path_by_action(unsigned char byte_action)
 			 {
 			     mu_stop_dialtone();
 		     }
-		     mu_set_voice_path(VOICE_PATH_HANDFREE);
+
+			 if(0 == appsys.flag_talk_rating)
+		     {
+		         appsys.byte_delay_cnt_handfree =10;
+		     }
+		     else
+		     {
+	           mu_set_voice_path(VOICE_PATH_HANDFREE);
+		   	 }
 			 
              if(0 == appsys.flag_hand_free)
 			 {	 
@@ -539,8 +538,7 @@ unsigned char wnd_input_dialnumbers(char * buf,  char * pcap , unsigned char max
 	 							}	
 								else if(TFKEY_VOL_UP== EventPara.sig_p.key_evt.key_val || TFKEY_VOL_DOWN== EventPara.sig_p.key_evt.key_val)
 								{
-	
-
+ 
 								}								
 								else if(
 										  (TFKEY_UP==EventPara.sig_p.key_evt.key_val)
@@ -550,27 +548,6 @@ unsigned char wnd_input_dialnumbers(char * buf,  char * pcap , unsigned char max
 									    )
 								{
 	                                wnd_cursor_move(p_edit_wnd,EventPara.sig_p.key_evt.key_val);
-								}
-								else if( (TFKEY_FAST1 == EventPara.sig_p.key_evt.key_val) 
-									|| (TFKEY_FAST2 == EventPara.sig_p.key_evt.key_val)
-									|| (TFKEY_FAST3 == EventPara.sig_p.key_evt.key_val)
-									|| (TFKEY_LVSRV == EventPara.sig_p.key_evt.key_val)
-									|| (TFKEY_REMAINED== EventPara.sig_p.key_evt.key_val)
-
-								)
-								{
-								    char fast_number[BOOK_ENTRY_NUM_FIELD_SIZE+1];
-									memset(fast_number,0,sizeof(fast_number));
-									
-								    if( 1 == appsys.flag_key_tone){mu_generate_beep();}
-									
-									app_find_fast_dial(EventPara.sig_p.key_evt.key_val, fast_number);
-									if(strlen(fast_number) >0 )
-									{
-                                        strcpy(buf, fast_number);
-										mu_stop_dialtone();
-										return DIALING_RET_DIALOUT;
-									}
 								}
 						    }
 						}
@@ -694,8 +671,8 @@ void show_dailing_static_window( T_BOOK_ENTRY *book_entry ,unsigned char flag_sh
     T_BOOK_ENTRY  temp_entry;
 	
 	lcd_clear_screen();
-
-	show_caption((0 == flag_show_prompt)?"正在拨号":"正在呼叫");
+	show_caption(get_multi_string((char * *)text_dialing));
+		
 		
 	lcd_put_rect(0, 12, SCREEN_WIDTH-1, 51);
 
@@ -789,10 +766,6 @@ unsigned char dialout_numbers( T_BOOK_ENTRY *book_entry )
 						else if( (TFKEY_SOFT_RIGHT== EventPara.sig_p.key_evt.key_val) || (TFKEY_EXIT== EventPara.sig_p.key_evt.key_val))
 						{
 	                         return 0xFF;// cancled by user
-						}
-						else if( (TFKEY_PHONEBOOK== EventPara.sig_p.key_evt.key_val))
-						{
-	                         send_android_command("2,3,4");//JWL
 						}
 					}	
 		        }
@@ -1157,7 +1130,7 @@ void adjust_speech_volume()
 				{
 					if(EventPara.sig_p.key_evt.isPressed)
 					{
-					    if ( TFKEY_VOL_UP== EventPara.sig_p.key_evt.key_val ) 
+					    if ( TFKEY_UP== EventPara.sig_p.key_evt.key_val || TFKEY_RIGHT==EventPara.sig_p.key_evt.key_val ) 
 					    {
 					        if ( volume < 4 )
 					        {
@@ -1168,13 +1141,122 @@ void adjust_speech_volume()
 							
 					         }
 					    }
-					    else if(TFKEY_VOL_DOWN ==EventPara.sig_p.key_evt.key_val  )
+					    else if(TFKEY_LEFT==EventPara.sig_p.key_evt.key_val || TFKEY_DOWN==EventPara.sig_p.key_evt.key_val )
 					    {
 					        if ( volume > 0 )
 					        {
 					            --volume;
 					            app_volumn_setting(5, volume);
                                 mu_set_spk_gain(volume);
+					        }
+					    }
+					    else if(TFKEY_SOFT_LEFT==EventPara.sig_p.key_evt.key_val || (TFKEY_CONFIRM ==EventPara.sig_p.key_evt.key_val) )
+					    {
+						    appsys.byte_need_redraw=0xFF;
+							dword_adjust_input_tick = app_get_tick_count();
+							
+							if(volume !=  old_val)
+							{
+                                sysprop->byte_talk_volume=volume;
+							    
+							    app_save_prop();
+							}
+	                        return;
+					    }
+					}
+		        }
+			    if(EVENT_HANDSET== EventPara.eventTyp )
+			    {
+					if(1 == appsys.flag_talk_rating)
+					{
+					     if(HOOK_STATE_OFFHOOK== appsys.flag_hook_state)
+					     {
+					         appsys.flag_hand_free=0;
+					         mu_set_voice_path(VOICE_PATH_HANDSET);
+					     }
+					     else
+					     {
+					        appsys.flag_hand_free=1;
+					        mu_set_voice_path(VOICE_PATH_HANDFREE);
+					     }
+					}
+				}
+				else if(EVENT_TIMER == EventPara.eventTyp )
+				{
+					if(get_duration_tick(dword_adjust_input_tick)>= 1000)//ms
+					{
+					    appsys.byte_need_redraw=0xFF;
+						if(volume !=  old_val)
+						{
+                            sysprop->byte_talk_volume=volume;
+						    app_save_prop();
+						}
+						
+                        return;
+					}
+				}
+		    }
+		}
+	}
+}
+
+
+void adjust_ring_volume()
+{
+    FlSignalBuffer EventPara;
+    unsigned bar_x, bar_y, bar_height, volume,old_val, update_frame=1;
+	
+	unsigned long  dword_adjust_input_tick=app_get_tick_count();
+
+    appsys.byte_need_redraw=0xFF;
+
+    volume= sysprop->byte_talk_volume;
+
+	old_val =volume;
+	
+    while(1)
+    {
+        if(appsys.byte_need_redraw >0)
+        {
+            if(0xFF == appsys.byte_need_redraw)
+            {
+			    lcd_clear_screen();
+				show_caption(get_multi_string((char * *)text_volume));
+				show_soft_key_prompt(get_multi_string((char * *)text_save), get_multi_string((char * *)text_null));
+            }
+
+			
+
+			app_volumn_setting(5, volume);
+
+			appsys.byte_need_redraw=0;
+		}
+		else
+		{
+            if(1 == app_get_message( &EventPara) )
+			{
+		        if(EVENT_KEY == EventPara.eventTyp )
+				{
+					if(EventPara.sig_p.key_evt.isPressed)
+					{
+					    if ( TFKEY_UP== EventPara.sig_p.key_evt.key_val || TFKEY_RIGHT==EventPara.sig_p.key_evt.key_val ) 
+					    {
+					        if ( volume < 4 )
+					        {
+					            ++volume;
+								app_volumn_setting(5, volume);
+
+                                mu_set_ring_gain(volume);
+							
+					         }
+					    }
+					    else if(TFKEY_LEFT==EventPara.sig_p.key_evt.key_val || TFKEY_DOWN==EventPara.sig_p.key_evt.key_val )
+					    {
+					        if ( volume > 0 )
+					        {
+					            --volume;
+					            app_volumn_setting(5, volume);
+                                mu_set_ring_gain(volume);
 					        }
 					    }
 					    else if(TFKEY_SOFT_LEFT==EventPara.sig_p.key_evt.key_val || (TFKEY_CONFIRM ==EventPara.sig_p.key_evt.key_val) )
@@ -1471,14 +1553,18 @@ void talk_phone_call( T_CALL_RECORD * pcall_record,char * that_name )
 					{
 	                    if(1 == appsys.flag_holding_call)
 	                    {
-	                        char * pconst="[OK拨号]"; 
-						    unsigned char str_width = get_str_dots_width(pconst);
+	                        char tmp_const[32];
+							memset(tmp_const,0,sizeof(tmp_const));
+							sprintf(tmp_const, "[%s]",get_multi_string((char * *)text_dial) );
+							
+						    unsigned char str_width = get_str_dots_width(tmp_const);
 	                        show_soft_key_prompt(get_multi_string((char * *)text_talk), get_multi_string((char * *)text_end));
 					        lcd_goto_xy((SCREEN_WIDTH- str_width)/2, 52);
-							lcd_put_string(pconst);	
+							lcd_put_string(tmp_const);	
 	                    }
 						else
 						{
+#if 0 // not support call waiting;
 						    if(0 == appsys.flag_call_comming)// call in no holding...
 						    {
                                 show_soft_key_prompt(get_multi_string((char * *)text_hold), get_multi_string((char * *)text_end));
@@ -1487,16 +1573,19 @@ void talk_phone_call( T_CALL_RECORD * pcall_record,char * that_name )
 							{
 	                            show_soft_key_prompt(get_multi_string((char * *)text_null), get_multi_string((char * *)text_end));
 							}
+#else
+                            show_soft_key_prompt(get_multi_string((char * *)text_null), get_multi_string((char * *)text_end));
+#endif
 						}
 					}
                 }
 
                 if(0 == appsys.flag_holding_call && 0 == flag_waiting_call)
                 {
-	                lcd_goto_xy( (SCREEN_WIDTH - get_str_dots_width("M"))/2, 54);
+	                lcd_goto_xy( (SCREEN_WIDTH - 12)/2, 54);
 	                if(1 == appsys.flag_muted)
 	                {
-						lcd_put_string("M");
+						show_bitmap(BMP_TALK_MUTE_BIN);
 	                }
 					else
 					{
@@ -1544,7 +1633,7 @@ void talk_phone_call( T_CALL_RECORD * pcall_record,char * that_name )
                                       goto QUIT_DIAL;
 								 }
 							}
-							else if(TFKEY_VOL_UP== EventPara.sig_p.key_evt.key_val || TFKEY_VOL_DOWN== EventPara.sig_p.key_evt.key_val)
+							else if(TFKEY_UP== EventPara.sig_p.key_evt.key_val || TFKEY_LEFT== EventPara.sig_p.key_evt.key_val || TFKEY_RIGHT==EventPara.sig_p.key_evt.key_val || TFKEY_DOWN==EventPara.sig_p.key_evt.key_val)
 							{
 				                adjust_speech_volume();
 							}
@@ -1693,9 +1782,17 @@ void talk_phone_call( T_CALL_RECORD * pcall_record,char * that_name )
                                     break;
 								}
 							}
-							else if(TFKEY_PHONEBOOK== EventPara.sig_p.key_evt.key_val)
+							else if(TFKEY_MUTE == EventPara.sig_p.key_evt.key_val)
 							{
-				                fake_android_message("2,3,2");
+				                if(1 == appsys.flag_muted)
+				                {
+                                    mu_cancel_mute_mic();
+								}
+								else
+								{
+                                    mu_mute_mic();
+								}
+								appsys.byte_need_redraw |= UPDATE_CALL_KEY_PROMPT;
 							}
 							else if(TFKEY_EXIT== EventPara.sig_p.key_evt.key_val)
 							{
@@ -2147,7 +2244,7 @@ void app_dial_out(char * init_str)
 
 	   case DIALING_RET_GET_VERISON:
        {
-          	app_view_version();
+           app_view_version();
 	   }
 	   break;
 
@@ -2192,92 +2289,37 @@ void app_dial_out(char * init_str)
 	   }
 	   break;
 	   
-	   case DIALING_RET_LOCK_BASE:
-	   {
-	   }
-	   break;
+
 
 	   case DIALING_RET_SIM_ENCYPT:
 	   {
 	   }
 	   break;	 
 
-	   case DIALING_RET_TDKEY_QUERY:
-	   {
-	   }
-	   break;	
 
-	   case DIALING_RET_OPEN_USB:
-	   {
-
-	   }
-	   break;
-
-
-
-	   case DIALING_RET_NORMAL_WORK:
-	   {
-   
-	   }
-	   break;
 
        case DIALING_RET_LOCK_PHONE:
        {   
-		   app_save_prop();
-		   delay_ms(1000);
 
 	   }
 	   break;
 
 
-	   case DIALING_RET_SET_IP_PARA:
-	   {
-
-	   }
-	   break;
-
-	   case DIALING_RET_SET_LIFE_SRV:
-	   	   app_set_fast_dial(3);  // 3 在排列上是"生活服务号码"
-	   break;
-
-	   case DIALING_RET_GET_CSQ_VAL:
-	   {
-           show_device_csq_level();
-	   }
-	   break;
-
-	   case DIALING_RET_GET_POWER_INFO:
-	   {
-           show_device_power_info();
-	   }
-	   break;  
 
 
-	   case DIALING_RET_SET_DOOR_ALMTP:
-       {
-
-	   }
-	   break;
-	   
-	   case DIALING_RET_SET_P2P_SNSR_ERR:
-	   {
-
-	   }
-	   break;
-	   
-	   case DIALING_RET_SET_P2P_LOW_BAT:
-	   {
-   
-	   }
-	   break;
 	   
 	   case DIALING_RET_NO_SENSE:
 	   default:
 	   break;
    }
+
    app_stop_call();
 
-   mu_set_voice_path(VOICE_PATH_HANDFREE);
+   if(0  == appsys.byte_delay_cnt_handfree)
+   {
+       mu_set_voice_path(VOICE_PATH_HANDFREE);
+   }
+  
 
    appsys.flag_dialing=0;
    appsys.flag_hand_free =0;

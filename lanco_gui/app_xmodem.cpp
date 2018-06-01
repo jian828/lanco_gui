@@ -69,6 +69,8 @@ void print_hex_string(char * caption ,unsigned char * pbuf, unsigned short buf_s
    char tmp_buf[256];
    memset(tmp_buf,0,sizeof(256));
 
+   return;
+
    DebugPrintf("-----------------------hex string[%s]----------------------------\r\n",caption);
    
    for(i=0;i<buf_size;i++)

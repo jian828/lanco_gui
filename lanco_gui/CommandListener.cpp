@@ -38,6 +38,15 @@ bool CommandListener::onDataAvailable(SocketClient *c) {
     int offset = 0;
     int i;
 
+#if 0	
+	//printf data
+	SLOGD("===syw=== printf data start:");
+	for (i = 0; i < len; i++) {
+		SLOGD("%2x, ", buffer[i]);
+	}
+	SLOGD("===syw=== printf data end:");
+#endif
+	
     for (i = 0; i < len; i++) {
         if (buffer[i] == '\0') {
             /* IMPORTANT: dispatchCommand() expects a zero-terminated string */
@@ -61,13 +70,16 @@ void CommandListener::dispatchCommandLanco(SocketClient *cli, char *data) {
 
 		//Post SystemUI
 		int len = strlen(data) - (strlen(LANCO_GUI_CMD_HEAD) + 1);
-		CMessage* msg = CMessage::Allocate(len);
+		unsigned char unicode_buf[2048] = {0};
+		
+		int unicode_len = Utf8ToUnicode((unsigned char*)(data + (strlen(LANCO_GUI_CMD_HEAD) + 1)), unicode_buf);
+		CMessage* msg = CMessage::Allocate(unicode_len);
 		if (msg == NULL) {
 			printf("KEY Out of Memory");
 		}
 		msg->SetMsgCode(EVENT_ANDROID_TO_UI);
-		msg->SetMsgLen(len);
-		memcpy(msg->GetMsgBuf(), (unsigned char*)(data + (strlen(LANCO_GUI_CMD_HEAD) + 1)), len);
+		msg->SetMsgLen(unicode_len);
+		memcpy(msg->GetMsgBuf(), unicode_buf, unicode_len);
 
 		CSystemUIManager* pUI = CSystemUIManager::GetInstance();
 		if (!pUI->Post(msg)) {

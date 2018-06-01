@@ -222,6 +222,7 @@ const char * const text_edit_entry[]={"Edit Entry","Editor Registro","Editar reg
 const char * const text_call_entry_options[]={"Call Entry Options","Opciones de llamadas","OpÁıes de entrada","∫ÙΩ–º«¬º—°œÓ"};
 const char * const text_copy_to_phonebook[]={"Copy to Phonebook","Copiar a Agenda","Copiar para livro","∏¥÷∆µΩµÁª∞±æ"};
 const char * const text_message_options[]={"Message Options","Opciones de Mensaje","OpÁıes de Mensagem","∂Ã–≈œ¢—°œÓ"};
+const char * const text_simbook_options[]={"Simbook Options","Opciones de Simbook","OpÁıes de Simbook","Simbook—°œÓ"};
 const char * const text_call_back[]={"Call Back","Devolver llamada","Ligue de volta","ªÿ≤¶"};
 const char * const text_simcard_sms[]={"Simcard SMS","SMS de Simcard","SMS de Simcard","SIMø®∂Ã–≈"};
 const char * const text_simcard_book[]={"Simcard BOOK","Libro de Simcard","Livro Simcard","SIMµÁª∞±æ"};
@@ -268,6 +269,8 @@ const char * const text_handset_test[]={"Handset Test","Prueba de auricular","Te
 const char * const text_handfree_test[]={"HandFree Test","Prueba de manoslibres","Teste m„os livres","√‚Ã·≤‚ ‘"};
 const char * const text_lcd_test[]={"Lcd Test","Prueba de LCD","Teste lcd","LCD≤‚ ‘"};
 const char * const text_bat_test[]={"Bat Test","Prueba de baterÌa","Teste da bateria","µÁ≥ÿ≤‚ ‘"};
+const char * const text_expw_test[]={"Ex power Test","Prueba de AC","Teste da AC","Õ‚µÁ≤‚ ‘"};
+const char * const text_signal_test[]={"Signal Test","Prueba de Signal","Teste da Signal","–≈∫≈≤‚ ‘"};
 const char * const text_echo_test[]={"Echo Test","Prueba de eco","Teste de eco","ÀÕª∞ ‹ª∞≤‚ ‘"};
 const char * const text_change_pin_code[]={"Change Pin Code","Cambiar claves","Alterar o cÛdigo do PIN","–ﬁ∏ƒPIN¬Í"};
 const char * const text_set_pin_lock[]={"Set Pin Lock","Activar bloqueo de PIN","Definir bloqueio Pin","…Ë÷√PINÀ¯∂®"};
@@ -396,5 +399,7 @@ const char * const text_once[]={"Once" ,"Una vez" ,"Uma vez","µ•¥Œ"};
 const char * const text_everyday[]={"Every day" ,"Cada dÌa","Todo dia" ,"√øÃÏ"};
 const char * const text_no_sms_on_sim[]={"No sms on simcard!","Sin SMS en simcard!","N„o h· sms no simcard!","SIMø®…œ√ª”–∂Ã–≈œ¢!"};
 const char * const text_no_book_on_sim[]={"No book on simcard!","Ning˙n libro en simcard!","Nenhum livro sobre simcard!","SIMø®…œ√ª”–µÁª∞±æ!"};
+const char * const text_bluetooth[]={"Bluetooth","Bluetooth","Bluetooth","¿∂—¿"};
+const char * const text_wifi[]={"Wifi","Wifi","Wi-Fi","Wifi"};
 
 

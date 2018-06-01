@@ -18,6 +18,7 @@ extern const char * const * const mem_view_call_log_opt[];
 extern const char * const * const mem_list_in_sms_opt[];
 extern const char * const * const mem_list_out_sms_opt[];
 extern const char * const * const mem_in_sm_detial_opt[];
+extern const char * const * const mem_simbook_opt[];
 extern const char * const * const mem_out_sm_detial_opt[];
 extern const char * const * const mem_draft_detial_opt[];
 extern const char * const * const mem_call_ctrl_settings[];

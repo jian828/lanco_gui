@@ -1037,8 +1037,9 @@ void fill_prop_with_pri()
 	sysprop->byte_decimal_pos=2;
 	
 	
-	sysprop->byte_income_ring =8;
-	sysprop->byte_sms_ring=3;
+	sysprop->byte_income_ring =0;
+	sysprop->byte_sms_ring=0;
+	sysprop->struct_alarm.alarm_ring=0;
 	
 	sysprop->byte_talk_volume=2;
     sysprop->byte_ring_volume=2;
@@ -1069,7 +1070,6 @@ void fill_prop_with_pri()
 
 
 
-	sysprop->byte_network_type =NETWORK_TYPE_2G;
 	
 	sysprop->flag_key_tone =1;
 
