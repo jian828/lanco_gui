@@ -3,17 +3,17 @@
 
 
 
-
-
+// 定义10个DATABASE 结构数组
+// 
 DATABASEINFO g_db_info[DATABASEINFO_CNT];
-DATABASEINFO * g_table_info;
+DATABASEINFO * g_table_info;		// 就是指向DATABASE结构数组
 unsigned char * prop_file;
-unsigned char  g_ot_buffer[TFNET_FILE_SIZE]={0};
-int  g_ot_id_len[TFNET_ID_MAX]={0};
+unsigned char  g_ot_buffer[TFNET_FILE_SIZE]={0};		// 超大buff，从文件中读出来
+int  g_ot_id_len[TFNET_ID_MAX]={0};		// 
 
 
 
-SYSPROP * sysprop;
+SYSPROP * sysprop;	// 指针，指向SYSPROP结构
 
 
 void app_test_syn_data(signed char tb_idx)

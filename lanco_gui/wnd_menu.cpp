@@ -252,6 +252,9 @@ unsigned char choose_menu_option_ex(char *** temp_menus, unsigned char max_size,
 	if(  (ex_style | MENU_STYLE_MUSIC_VOICE )  >0  || (ex_style | MENU_STYLE_ALARM_VOICE )  >0 || (ex_style | MENU_STYLE_SMSRING_VOICE )  >0    )
 	{
          appsys.flag_selecting_ring=1;
+
+	     app_set_voice_volumn(VOCTYPE_INCOMING_CALL, music_volume[sysprop->byte_ring_volume]);
+         app_set_voice_volumn(VOCTYPE_SMS_INCOMING,  sms_volume[sysprop->byte_sms_volume]);
 	}
 
     if (1 == app_menu_option(temp_menus, (unsigned char *)menu_mask, max_size,*def_pos, (flag_read_only>0)? MENU_OPTION_READONLY :0 , ex_style))
@@ -277,6 +280,8 @@ unsigned char choose_menu_option_ex(char *** temp_menus, unsigned char max_size,
     {
         app_stop_music();
 	    appsys.flag_selecting_ring=0;
+
+        app_check_ring_mute();
 	}
 
     return nret;

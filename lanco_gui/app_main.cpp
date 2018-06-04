@@ -147,6 +147,17 @@ void app_check_valid_paras()
 	}
 }
 
+unsigned char app_check_ring_mute()
+{
+	if(1 == appsys.flag_ring_mute)
+	{
+		app_set_voice_volumn(VOCTYPE_INCOMING_CALL, 0);
+		app_set_voice_volumn(VOCTYPE_SMS_INCOMING, 0);
+		return 1;
+	}
+	return 0;
+}
+
 
 
 
@@ -326,7 +337,7 @@ void * app_main(void * p)
 						else
 						{
                              app_set_voice_volumn(VOCTYPE_INCOMING_CALL, music_volume[sysprop->byte_ring_volume]);
-                 		     app_set_voice_volumn(VOCTYPE_SMS_INCOMING,  music_volume[sysprop->byte_sms_volume]);
+                 		     app_set_voice_volumn(VOCTYPE_SMS_INCOMING,  sms_volume[sysprop->byte_sms_volume]);
 							 appsys.flag_ring_mute=0;
 						}
 

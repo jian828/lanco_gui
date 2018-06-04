@@ -786,10 +786,10 @@ FlSignalBuffer;
 
 typedef struct FLASH_CELLTag
 {
-    short       cell_start;
-    short       cell_len;
-	short       cell_cnt;
-	short       cell_max_rec_cnt;
+    short       cell_start;			// 单元的开始地址
+    short       cell_len;			// 一个单元的长度，比如1K字节
+	short       cell_cnt;			// 单元的数量，比如8个数量(如果单元长度是1k，则数据大小为8K)
+	short       cell_max_rec_cnt;	// 单元长度/记录长度
 }
 FLASH_CELL;
 
@@ -797,8 +797,8 @@ FLASH_CELL;
 
 typedef struct FLASH_TABLETag
 {
-	short       rec_max_cnt;
-	short       rec_len;
+	short       rec_max_cnt;		// 最多的记录数量
+	short       rec_len;			// 单条记录的长度
 }
 FLASH_TABLE;
 
@@ -813,8 +813,7 @@ typedef struct DATABASEINFOTag
 }
 DATABASEINFO;
 
-
-
+cell_info.cell_max_rec_cnt
 
 typedef struct
 {
@@ -1338,7 +1337,7 @@ typedef struct APPSYSTag
 APPSYS;
 
 
-
+// 系统参数
 typedef struct SYSPROPTag
 {
     unsigned long prop_size;   // high word == ~low word
@@ -1529,6 +1528,7 @@ extern unsigned char get_send_dcs(char * pdt);
 extern void app_main();
 extern void app_init_global_vars();
 extern void app_check_valid_paras();
+extern unsigned char app_check_ring_mute();
 extern void app_initial_system();
 extern void app_query_hw_info(unsigned short wait_ms);
 extern unsigned char app_wait_simcard_ready(int wait_ms);

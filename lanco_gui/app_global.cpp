@@ -151,13 +151,13 @@ unsigned char app_check_password( unsigned char pin_type)
 
 void app_init_global_vars()
 {
-	prop_file = app_alloc_memory(FLASH_CELL_LENGTH_1K);
-	memset(prop_file,0,FLASH_CELL_LENGTH_1K);
+	prop_file = app_alloc_memory(FLASH_CELL_LENGTH_1K);			// 在堆中分配1K内存
+	memset(prop_file,0,FLASH_CELL_LENGTH_1K);					// 1k内存的数据全部置零
 
-    memset(&appsys, 0 ,sizeof(APPSYS));
+    memset(&appsys, 0 ,sizeof(APPSYS));							// appsys结构变量的数据全部置零
 
     appsys.byte_last_music_id =   0xFF;
-    sysprop     =(SYSPROP *)&prop_file[0];
+    sysprop     =(SYSPROP *)&prop_file[0];						// 
 
 	appsys.byte_power_service_delay=BAT_SERVICE_DELAY;
 
