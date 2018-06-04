@@ -1356,7 +1356,7 @@ typedef struct SYSPROPTag
 #endif
 	
     unsigned char flag_auto_lock_keypad;
-	unsigned char flag_lock_phone;
+	unsigned char flag_lock_phone;				// Ëø×¡µç»°
 	unsigned char flag_auto_redial;
 	unsigned char flag_key_tone;
 
